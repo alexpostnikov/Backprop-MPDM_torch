@@ -1,16 +1,16 @@
 import torch
 
-input_state  = torch.tensor(([2.0,0.5,0.0,-5.0], [1.0,2.5,0.0,0.0]) )
-k = 0.5
+input_state  = torch.tensor(([2.0,0.5,0.0,-1.0], [1.0,2.5,0.0,0.0]) )
+k = 4.9
 input_state = input_state.view(-1,4)
 goal = torch.tensor(([4.0,1.0], [2.1,2.2]))
 goal = goal.view(-1,2)
-pedestrians_speed = 1.0
+pedestrians_speed = 2.0
 
 DT = 0.2
 
 def calc_new_pose(input):
-    input[:,0:2] = input[:,0:2] + input[:,2:4] * DT
+    input[:,0:2] = input[:,0:2] + input[:,2:4] * DT #from Behavior-estimation-for-a-complete-framework-for-human-motion-prediction-in-crowded-environments form(4)
     return input
 
 def calc_new_vel(input_state, forces):
@@ -23,7 +23,7 @@ plot_data = [[],[],[]]
 for i in range(0, 6000):
     
 
-    F_attr = 0.5 * ( pedestrians_speed * ( (goal[:,0:2] - input_state[:,0:2]) / (goal[:,0:2] - input_state[:,0:2]).norm())) - input_state[:,2:4]
+    F_attr = k * ( pedestrians_speed * ( (goal[:,0:2] - input_state[:,0:2]) / (goal[:,0:2] - input_state[:,0:2]).norm())) - input_state[:,2:4]
     calc_new_vel(input_state, F_attr)
     input_state = calc_new_pose(input_state)
     t +=DT
