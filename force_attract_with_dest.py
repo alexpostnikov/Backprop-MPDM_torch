@@ -18,7 +18,7 @@ def force_goal(input_state, goal):
 	# v_desired_y =  goal[:,1:2]  - input_state[:,1:2] 
 	v_desired_x_y =  goal[:,0:2]  - input_state[:,0:2] 
 
-	v_desired_sqrt = torch.sqrt(v_desired_x_y[:,0:1]**2 + v_desired_x_y[:,1:2]**2)
+	v_desired_ = torch.sqrt(v_desired_x_y[:,0:1]**2 + v_desired_x_y[:,1:2]**2)
 	v_desired_x_y *= pedestrians_speed / v_desired_
 	# F_attr =torch.tensor([ k * (v_desired_x - input_state[:,2:3]), k * (v_desired_y - input_state[:,3:4]) ] )
 	# F_attr = k * ( pedestrians_speed * ( (goal[:,0:2] - input_state[:,0:2]) / (goal[:,0:2] - input_state[:,0:2]).norm())) - input_state[:,2:4]
