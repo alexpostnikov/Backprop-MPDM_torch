@@ -3,13 +3,13 @@ import torch
 class Param:
     def __init__(self):
         # ros
-        self.loop_rate = 10.
+        self.loop_rate = 20.
         
         # mpdm params
         self.k = 2.2
         self.DT = 0.2
         self.pedestrians_speed = 0.5
-        self.num_ped = 3
+        self.num_ped = 5
         self.area_size = 4
 
         # 
