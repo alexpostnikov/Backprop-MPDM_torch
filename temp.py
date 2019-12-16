@@ -1,60 +1,53 @@
 import torch
+from force_attract_with_dest import k, force_goal, pose_propagation, DT, pedestrians_speed, is_goal_achieved, generate_new_goal
+from forward import calc_cost_function, robot_pose, calc_forces
 
-input_state  = torch.tensor(([2.0,0.5,0.0,-5.0], [1.0,2.5,0.0,0.0]) )
-k = 0.5
-input_state = input_state.view(-1,4)
-goal = torch.tensor(([4.0,1.0], [2.1,2.2]))
-goal = goal.view(-1,2)
-pedestrians_speed = 1.0
+a = 5
+b = 2
+e = 0.001
+rep_coef = 1.
+robot_speed = 1
 
-DT = 0.2
+torch.autograd.set_detect_anomaly(True)
+na = 2 
+data = torch.rand((na,4)).requires_grad_(True)
+data = data * 10 - 5
+# data.retain_grad()
+cost = torch.zeros((na,2)).requires_grad_(True)
 
-def calc_new_pose(input):
-    input[:,0:2] = input[:,0:2] + input[:,2:4] * DT
-    return input
 
-def calc_new_vel(input_state, forces):
-    input_state[:,2:4] = (forces * DT / 60.0 )+ input_state[:,2:4]
-    return input_state
+goals = 10 * torch.rand((na,2),requires_grad=False)
 
-t = 0
-# plot_data = [[input_state.data[0,0].item()],[input_state.data[0,0].item()],[t]]
-plot_data = [[],[],[]]
-for i in range(0, 6000):
+
+print ("       ---data\n ", data)
+print ("       ---robot_pose\n ", robot_pose)
+print ("       ---goals\n ", goals)
+print ("\n")
+gradient = None
+# for optim_number in range(0,10):
+#     cost = torch.zeros((na,2)).requires_grad_(True)
+#     if gradient is not None:
+#         with torch.no_grad():
+#             data[2:4] +=  10**-4 * gradient[2:4]
+#             data.retain_grad()
+#         print ("here")
+
+#     inner_data = data.clone()
+#     inner_data.retain_grad()
+inner_data = data.clone()
+# inner_data.retain_grad()
+for i in range(0,10):
     
+    forces = calc_forces(inner_data, goals)
+    inner_data = pose_propagation(forces, inner_data)
+    temp=calc_cost_function(agents_pose=inner_data[:,0:2])
+    cost = cost + temp
 
-    F_attr = 0.5 * ( pedestrians_speed * ( (goal[:,0:2] - input_state[:,0:2]) / (goal[:,0:2] - input_state[:,0:2]).norm())) - input_state[:,2:4]
-    calc_new_vel(input_state, F_attr)
-    input_state = calc_new_pose(input_state)
-    t +=DT
-    
-    plot_data[0].append(input_state.data[0,0].item())
-    plot_data[1].append(input_state.data[0,1].item())
-    plot_data[2].append(t)
-# print ((goal[:,0:2] - input_state[:,0:2]).norm())
-# print (goal[:,0:2] - input_state[:,0:2])
-
-print (F_attr)
-
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-# fig, ax = plt.subplots()
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-
-ax.plot(plot_data[0],  plot_data[1],   plot_data[2],'ro',linewidth=1)
-# ax.plot(x2, y2, z,'ro',color='skyblue')
-# ax.plot(x3, y3, z,'ro',color='olive')
-# ax.plot(x4, y4, z,'ro',color='yellow')
-ax.set(zlabel='time (s)', ylabel='y', xlabel = "x",
-       title='traj of persons')
-ax.grid()
-
-plt.show()
-
+print ("       ---cost\n", cost)
+cost.backward(inner_data[:,0:2])
+gradient =  inner_data.grad
+print ("       ---grad:\n", gradient)
+inner_data.grad.data.zero_()
+data.grad.data.zero_()
+# cost.backward(data[:,2:4])
+# print ("grad" , data.grad)

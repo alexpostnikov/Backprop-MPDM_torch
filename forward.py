@@ -105,9 +105,9 @@ if __name__ == "__main__":
     na = 4
     rand_data = torch.rand((na,4))
     # rand_data[:,2:4] *= 0
-    data = 10 * rand_data
+    data = 1 * rand_data
     data.requires_grad_(True)
-    goals = 10 * torch.rand((na,2),requires_grad=False)
+    goals = 1 * torch.rand((na,2),requires_grad=False)
     cost = torch.zeros(na,2)
 
 
@@ -148,9 +148,9 @@ if __name__ == "__main__":
         y4.append(data.data[3,1].item())
         z.append(t)
         t+=DT
-        res = is_goal_achieved(data, goals)
-        if any(res) == True:
-            goals = generate_new_goal(goals,res, data)
+        # res = is_goal_achieved(data, goals)
+        # if any(res) == True:
+        #     goals = generate_new_goal(goals,res, data)
 
     # forces.backward(torch.ones((forces.shape)))
     print ("final state: ", data)
