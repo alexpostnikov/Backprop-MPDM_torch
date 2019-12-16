@@ -4,8 +4,8 @@ from force_attract_with_dest import k, force_goal, pose_propagation, DT, pedestr
 a = 5
 b = 2
 e = 0.001
-rep_coef = 1.
 robot_speed = 1
+# rep_coef = 1.
 
 robot_pose = torch.tensor([1.,2.01],requires_grad=True)
 goal= torch.tensor([10.,20.],requires_grad=True)

@@ -22,7 +22,7 @@ def force_goal(input_state, goal):
 	F_attr = k * (v_desired_x_y - input_state[:,2:4])
 	return F_attr
 
-def pose_propagation(force, state):
+def pose_propagation(force, state, DT, pedestrians_speed):
 	
 	# vx = pose.v*cos(pose.theta) + force.fx*dt
 	# vy = pose.v*sin(pose.theta) + force.fy*dt
