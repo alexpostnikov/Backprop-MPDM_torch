@@ -5,7 +5,7 @@ k = 4.9
 input_state = input_state.view(-1,4)
 goal = torch.tensor(([4.0,1.0], [2.1,2.2]))
 goal = goal.view(-1,2)
-pedestrians_speed = 2.0
+pedestrians_speed = 1.0
 
 DT = 0.2
 

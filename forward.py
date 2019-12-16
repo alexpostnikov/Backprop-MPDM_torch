@@ -12,21 +12,9 @@ goal= torch.tensor([10.,20.],requires_grad=True)
 init_pose = torch.tensor([0.,1.],requires_grad=True)
 agents_pose = torch.tensor([[1.,3.],[5.,2.],[1.,0.]],requires_grad=True)
 
-
-def tensor_inf_to_zero(bad_tensor):
-    bad_tensor[bad_tensor == float('inf')] = 0
-    bad_tensor.requires_grad_(True)
-    bad_tensor.retain_grad()
-    return bad_tensor
-
 def calc_forces(state, goals):
-    rep_force = rep_coef * calc_rep_forces(state[:,0:2])
-
-    # rep_force = torch.clamp(rep_force, min=-5., max=5.)
+    rep_force = calc_rep_forces(state[:,0:2])
     attr_force =  force_goal(state, goals)
-    # print ("rep_force", rep_force)
-    # print ("attr_force", attr_force)
-    
     return rep_force + attr_force
 
 def calc_attractive_forces(input, goals):
@@ -140,22 +128,22 @@ if __name__ == "__main__":
     torch.autograd.set_detect_anomaly(True)
     na = 4
     rand_data = torch.rand((na,4))
-    rand_data[:,2:4] *= 0
+    # rand_data[:,2:4] *= 0
     data = 10 * rand_data
     data.requires_grad_(True)
     goals = 10 * torch.rand((na,2),requires_grad=False)
     cost = torch.zeros(na,2)
 
 
-    forces = calc_forces(data, goals)
-    data_ = pose_propagation(forces,data)
-    cost+=calc_cost_function(agents_pose=data_[:,0:2])
-    print (cost)
+    # forces = calc_forces(data, goals)
+    # data_ = pose_propagation(forces,data)
+    # cost+=calc_cost_function(agents_pose=data_[:,0:2])
+    # print (cost)
     # print ("forces ", forces)
-    cost.backward(torch.ones((cost.shape)))
+    # cost.backward(torch.ones((cost.shape)))
 
-    print (data.grad)#[:,0:2].grad)
-    exit()
+    # print (data.grad)#[:,0:2].grad)
+    # exit()
 
     x = []
     y = []

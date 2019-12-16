@@ -5,9 +5,6 @@ k = 2.2
 DT = 0.2
 pedestrians_speed = 0.5
 
-input_state = input_state.view(-1,4)
-goal = torch.tensor(([4.0,1.0], [4.0,1.0]))#, [2.1,2.2]))
-goal = goal.view(-1,2)
 
 
 
@@ -18,7 +15,7 @@ def force_goal(input_state, goal):
 	# v_desired_y =  goal[:,1:2]  - input_state[:,1:2] 
 	v_desired_x_y =  goal[:,0:2]  - input_state[:,0:2] 
 
-	v_desired_ = torch.sqrt(v_desired_x_y[:,0:1]**2 + v_desired_x_y[:,1:2]**2)
+	v_desired_ = torch.sqrt(v_desired_x_y.clone()[:,0:1]**2 + v_desired_x_y.clone()[:,1:2]**2)
 	v_desired_x_y *= pedestrians_speed / v_desired_
 	# F_attr =torch.tensor([ k * (v_desired_x - input_state[:,2:3]), k * (v_desired_y - input_state[:,3:4]) ] )
 	# F_attr = k * ( pedestrians_speed * ( (goal[:,0:2] - input_state[:,0:2]) / (goal[:,0:2] - input_state[:,0:2]).norm())) - input_state[:,2:4]
@@ -29,16 +26,16 @@ def pose_propagation(force, state):
 	
 	# vx = pose.v*cos(pose.theta) + force.fx*dt
 	# vy = pose.v*sin(pose.theta) + force.fy*dt
-	vx_vy = state[:,2:4] + (force*DT)
+	vx_vy_uncl = state[:,2:4] + (force*DT)
 	dx_dy = state[:,2:4]*DT + (force*(DT**2))*0.5
 	
 	# dx = pose.v*cos(pose.theta)*dt + force.fx*dt*dt*0.5
 	# dy = pose.v*sin(pose.theta)*dt + force.fy*dt*dt*0.5
 
 	# //apply constrains:
-	pose_prop_v = vx_vy.norm(dim=1) #torch.sqrt(vx_vy[:,0:1]**2 + vx_vy[:,1:2]**2)
-	pose_prop_v = torch.clamp(pose_prop_v, max=pedestrians_speed)
-	vx_vy = torch.clamp(vx_vy, max=pedestrians_speed)
+	pose_prop_v_unclamped = vx_vy_uncl.norm(dim=1) #torch.sqrt(vx_vy[:,0:1]**2 + vx_vy[:,1:2]**2)
+	pose_prop_v = torch.clamp(pose_prop_v_unclamped, max=pedestrians_speed)
+	vx_vy = torch.clamp(vx_vy_uncl, max=pedestrians_speed)
 	
 	# pose_prop.v = sqrt( vx*vx + vy*vy )
 	# if (pose_prop_v > pedestrians_speed):
@@ -111,6 +108,11 @@ def calc_new_vel(input_state, forces):
 
 
 if __name__ == "__main__":
+
+	input_state = input_state.view(-1,4)
+	goal = torch.tensor(([4.0,1.0], [4.0,1.0]))#, [2.1,2.2]))
+	goal = goal.view(-1,2)
+
 	t = 0
 	# plot_data = [[input_state.data[0,0].item()],[input_state.data[0,0].item()],[t]]
 	plot_data = [[],[],[]]
