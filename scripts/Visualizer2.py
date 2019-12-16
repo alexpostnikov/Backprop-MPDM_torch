@@ -12,7 +12,8 @@ class Visualizer2:
         self.frame_id = frame_id
         self.point_scale = Vector3(0.2,0.2,0.2)
         self.point_color = ColorRGBA(1,1,1,1)
-        self.arrow_scale = Vector3(0.2,0.2,0.2)
+        self.arrow_scale = Vector3(0.02,0.1,0.1)
+        self.first_arrow_scale = Vector3(0.08,0.2,0.2)
         self.arrow_colors = [
         ColorRGBA(0,1,0,1),    # force 1 - green
         ColorRGBA(0,0,1,1),    # force 2 - blue
@@ -50,6 +51,7 @@ class Visualizer2:
             markerArray.markers.append(point_marker)
             forces = agent[2:]
             f_num = 0
+            first_arrow = True
             while len(forces>0):
                 first_point = Point(agent[0],agent[1],0) # coords of arrow
                 second_point = Point(agent[0]+forces[0],agent[1]+forces[1],0)  # coords of arrow
@@ -62,6 +64,9 @@ class Visualizer2:
                 points=[first_point,second_point],
                 colors=[self.arrow_colors[f_num],self.arrow_colors[f_num]] # color of arrow
                 )
+                if first_arrow:
+                    first_arrow = False
+                    arrow.scale = self.first_arrow_scale
                 arrow.header.frame_id = self.frame_id
                 markerArray.markers.append(arrow)
                 id+=1
@@ -69,116 +74,3 @@ class Visualizer2:
                 forces = forces[2:]
         self.publisher.publish(markerArray)
 
-    def createMarker(self, pose, ):
-        pass
-
-    def markerPublisher(self, point):
-        # TODO: shlopnut` s markersPublisher
-
-        marker = Marker()
-        marker.id = -1
-        marker.header.frame_id = self.frame_id
-        marker.type = marker.SPHERE
-        marker.action = marker.ADD
-        marker.scale.x = self.marker_size[0]
-        marker.scale.y = self.marker_size[1]
-        marker.scale.z = self.marker_size[2]
-        marker.color.r = self.color[0]
-        marker.color.g = self.color[1]
-        marker.color.b = self.color[2]
-        marker.color.a = self.color[3]
-        marker.pose.orientation.w = 1.0
-        marker.pose.position.x = point[0]
-        marker.pose.position.y = point[1]
-        marker.pose.position.z = 0
-        if len(point) > 2:
-            marker.pose.position.z = point[2]
-        self.publisher.publish(marker)
-
-    def markersPublisher(self, points):
-
-        markerArray = MarkerArray()
-        i = 0
-        for point in points:
-
-            marker = Marker()
-            marker.id = i
-            marker.header.frame_id = self.frame_id
-            marker.type = marker.SPHERE
-            marker.action = marker.ADD
-            marker.scale.x = self.marker_size[0]
-            marker.scale.y = self.marker_size[1]
-            marker.scale.z = self.marker_size[2]
-            marker.color.r = self.color[0]
-            marker.color.g = self.color[1]
-            marker.color.b = self.color[2]
-            marker.color.a = self.color[3]
-            marker.pose.orientation.w = 1.0
-            marker.pose.position.x = point[0]
-            marker.pose.position.y = point[1]
-            marker.pose.position.z = 0
-            if len(point) > 2:
-                marker.pose.position.z = point[2]
-            markerArray.markers.append(marker)
-            i += 1
-        self.publisher.publish(markerArray)
-
-    def ArrowsPublisher(self, points_ab):
-        markerArray = MarkerArray()
-        i = 0
-        for ab in points_ab:
-            marker = Marker()
-            marker.id = i
-            marker.header.frame_id = self.frame_id
-            marker.type = marker.ARROW
-            marker.action = marker.ADD
-            marker.scale.x = self.marker_size[0]
-            marker.scale.y = self.marker_size[1]
-            marker.scale.z = self.marker_size[2]
-            marker.color.r = self.color[0]
-            marker.color.g = self.color[1]
-            marker.color.b = self.color[2]
-            marker.color.a = self.color[3]
-            firstPoint = Point()
-            firstPoint.x = ab[0]
-            firstPoint.y = ab[1]
-            firstPoint.z = 0
-            marker.points.append(firstPoint)
-            secondPoint = Point()
-            secondPoint.x = ab[2]
-            secondPoint.y = ab[3]
-            secondPoint.z = 0
-            marker.points.append(secondPoint)
-            markerArray.markers.append(marker)
-            i += 1
-
-        self.publisher.publish(markerArray)
-
-    def ArrowPublisher(self, point_ab):
-        markerArray = MarkerArray()
-        i = 0
-        marker = Marker()
-        marker.id = i
-        marker.header.frame_id = self.frame_id
-        marker.type = marker.ARROW
-        marker.action = marker.ADD
-        marker.scale.x = self.marker_size[0]
-        marker.scale.y = self.marker_size[1]
-        marker.scale.z = self.marker_size[2]
-        marker.color.r = self.color[0]
-        marker.color.g = self.color[1]
-        marker.color.b = self.color[2]
-        marker.color.a = self.color[3]
-        firstPoint = Point()
-        firstPoint.x = point_ab[0]
-        firstPoint.y = point_ab[1]
-        firstPoint.z = 0
-        marker.points.append(firstPoint)
-        secondPoint = Point()
-        secondPoint.x = point_ab[2]
-        secondPoint.y = point_ab[3]
-        secondPoint.z = 0
-        marker.points.append(secondPoint)
-        i += 1
-
-        self.publisher.publish(marker)
