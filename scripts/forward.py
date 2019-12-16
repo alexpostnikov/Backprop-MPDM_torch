@@ -68,7 +68,7 @@ def calc_rep_forces(state):
          [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
          [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.]]
         '''
-    delta_pose = (state_concated_t - state_concated)
+    delta_pose = (-state_concated_t + state_concated)
     
     auxullary = torch.zeros(state_concated.shape[0], state_concated.shape[1])
     for i in range(state_concated.shape[0]):
@@ -91,24 +91,34 @@ def calc_rep_forces(state):
     dist_squared += 0.0000001 # TODO: otherwise  when doing backprop: sqrt(0)' -> nan
     dist = (dist_squared.matmul(aux))
      ## aka distance
-    dist = torch.sqrt(dist) + 100000*torch.eye(dist.shape[0])  #TODO: deal with 1/0,
+    dist = torch.sqrt(dist) + 10000000*torch.eye(dist.shape[0])  #TODO: deal with 1/0,
+    # print ("dist: ", dist)
     A = 2 * (10**3) # const param from  formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
     force_amplitude = A * torch.exp((0.3 - dist) / 0.08) ## according to Headed Social Force Model
-    force = force_amplitude.matmul(delta_pose / (dist).matmul(auxullary)) # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
+    # print ("force_amplitude: ", force_amplitude)
+
+    # print ("delta_pose / (dist).matmul(auxullary) \n",delta_pose / (dist).matmul(auxullary))
+    force = force_amplitude.matmul(auxullary)*(delta_pose / (dist).matmul(auxullary)) # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
+    # print ("force BBbefore: ", force)
+    force = (force * ((auxullary -1) *-1))
+    # print ("force before: ", force)
     aux2 = aux1.clone().t()
     force = force.matmul(aux2)
+    # print ("force after: ", force)
+    # print ()
     return force
 
 
 if __name__ == "__main__":
 
     torch.autograd.set_detect_anomaly(True)
-    na = 4
+    na = 2
     rand_data = torch.rand((na,4))
     # rand_data[:,2:4] *= 0
-    data = 10 * rand_data
+    data = rand_data
+    
     data.requires_grad_(True)
-    goals = 10 * torch.rand((na,2),requires_grad=False)
+    goals = torch.rand((na,2),requires_grad=False)
     cost = torch.zeros(na,2)
 
 
@@ -133,7 +143,7 @@ if __name__ == "__main__":
     y4 = []
     t = 0
     print ("init state ", data)
-    for i in range(0, 600):
+    for i in range(0, 1):
         forces = calc_forces(data, goals)
         
         data = pose_propagation(forces,data)
@@ -154,9 +164,9 @@ if __name__ == "__main__":
             goals = generate_new_goal(goals,res, data)
 
     # forces.backward(torch.ones((forces.shape)))
-    print ("final state: ", data)
-    print ("goals ", goals)
-    print ("final deltapose: ", data[:,0:2]- goals)
+    # print ("final state: ", data)
+    # print ("goals ", goals)
+    # print ("final deltapose: ", data[:,0:2]- goals)
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 

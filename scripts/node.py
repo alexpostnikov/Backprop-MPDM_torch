@@ -12,7 +12,7 @@ from force_attract_with_dest import generate_new_goal
 
 if __name__ == '__main__':
     node = rospy.init_node('mpdm')
-    loop_rate = 10.
+    loop_rate = 50.
 
     loop_sleep = 1/loop_rate
     # visualisation staff
@@ -21,16 +21,17 @@ if __name__ == '__main__':
     # visualisation staff
 
     # random env
-    num_ped = 4
+    num_ped = 10
+    SPACE = 5
     # , [1.0,2.5,0.0,0.0]) )
     # input_state = torch.tensor(([2.0, 0.5, 0.0, -1.], [2.0, 0.5, 0.0, -1.]))
-    input_state = 4*torch.rand((num_ped,4))
+    input_state = SPACE*torch.rand((num_ped,4))
     k = 2.2
     DT = 0.2
     pedestrians_speed = 0.5
     input_state = input_state.view(-1, 4)
     # goal = torch.tensor(([4.0, 1.0], [4.0, 1.0]))
-    goal = 4*torch.rand((num_ped,2))
+    goal = SPACE*torch.rand((num_ped,2))
     goal = goal.view(-1, 2)
     cost = torch.zeros(num_ped,2)
 
@@ -42,7 +43,7 @@ if __name__ == '__main__':
 
         res = is_goal_achieved(input_state, goal)
         if any(res) == True:
-            goal = generate_new_goal(goal, res, input_state, 4)
+            goal = generate_new_goal(goal, res, input_state, SPACE)
         # publish positions
         vis_peds.publish(input_state)
         vis_goals.publish(goal)
