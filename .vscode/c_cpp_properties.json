@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/pazuzu/catkin_ws/devel/include/**",
+                "/opt/ros/melodic/include/**",
+                "/home/pazuzu/catkin_ws/src/doosan-robot/common/include/**",
+                "/home/pazuzu/catkin_ws/src/doosan-robot/dsr_control/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}

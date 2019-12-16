@@ -78,12 +78,12 @@ def is_goal_achieved(state, goals):
     is_achieved = torch.sqrt(is_achieved[:,0]**2 + is_achieved[:,1]**2)
     return is_achieved<0.3
 
-def generate_new_goal(goals, is_achived, input_state):
+def generate_new_goal(goals, is_achived, input_state,mul = 20):
     
     for i in range (is_achived.shape[0]):
         if is_achived[i].item() == True:
-            goals[i,0] = 20*torch.rand(1)
-            goals[i,1] = 20*torch.rand(1)
+            goals[i,0] = mul*torch.rand(1)
+            goals[i,1] = mul*torch.rand(1)
     return goals
 
 

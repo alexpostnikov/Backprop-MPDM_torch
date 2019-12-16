@@ -14,6 +14,7 @@ agents_pose = torch.tensor([[1.,3.],[5.,2.],[1.,0.]],requires_grad=True)
 
 def calc_forces(state, goals):
     rep_force = calc_rep_forces(state[:,0:2])
+    # rep_force = torch.clamp(rep_force,min=-5., max = 5.)
     attr_force =  force_goal(state, goals)
     return rep_force + attr_force
 
