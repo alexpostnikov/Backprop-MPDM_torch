@@ -17,10 +17,6 @@ def calc_forces(state, goals):
     attr_force =  force_goal(state, goals)
     return rep_force + attr_force
 
-def calc_attractive_forces(input, goals):
-    global  pedestrians_speed
-    force = k * ( pedestrians_speed * ( (goals[:,0:2] - input[:,0:2]) / (goals[:,0:2] - input[:,0:2]).norm())) - input[:,2:4]
-    return force 
 
 
 def calc_cost_function(a=a, b=b,e=e,robot_speed=robot_speed, robot_pose=robot_pose,goal=goal,init_pose=init_pose,agents_pose=agents_pose ):
@@ -34,32 +30,12 @@ def calc_cost_function(a=a, b=b,e=e,robot_speed=robot_speed, robot_pose=robot_po
     if robot_speed>e:
         for n in range(len(agents_pose)):
             # TODO: go into matrix math
-            B[n] = 0*torch.exp(-torch.norm(agents_pose[n]-robot_pose)/b)
+            B[n] = torch.exp(-torch.norm(agents_pose[n]-robot_pose)/b)
     # Cost
     for n in range(len(B)):
         costs[n] = -a*PG+B[n]
     return costs
 
-
-def limit_speed(input_state, limit):
-
-    ampl = torch.sqrt(input_state[:,0:1]**2 + input_state[:,1:2]**2)
-    
-    mask=torch.cat((ampl>limit,ampl>limit),dim=1)
-    ampl_2D = torch.cat((ampl,ampl),dim=1)
-    input_state[mask] = input_state[mask].clone() * limit /ampl_2D[mask]
-    return input_state
-
-def calc_new_vel(input_state, forces):
-    input = input_state.clone()
-    input.requires_grad_(True)
-    input[:,2:4] = (forces.clone() * DT / 60.0 ) + input[:,2:4].clone()
-    return input
-
-def calc_new_pose(input):
-    input.requires_grad_(True)
-    input[:,0:2] = input[:,0:2].clone() + input[:,2:4].clone() * DT
-    return input
 
 def calc_rep_forces(state):
     # state = state_[:,0:2]
