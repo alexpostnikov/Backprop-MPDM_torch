@@ -3,20 +3,27 @@ import torch
 class Param:
     def __init__(self):
         # ros
-        self.loop_rate = 100.
+        self.loop_rate = 200.
+        
+        self.area_size = 10
+        self.num_ped = 20
+        self.pedestrians_speed = 0.5
+        self.robot_init_pose = [1.5,2.0]
+        self.robot_goal = [10.,20.]
+        self.robot_speed = 2.0
+
         
         # mpdm params
         self.k = 2.2
-        self.DT = 0.002
-        self.pedestrians_speed = 0.5
-        self.num_ped = 5
-        self.area_size = 4
+        self.DT = 0.02
+        # robot params
 
         # 
         self.a = 5
         self.b = 2
         self.e = 0.001
         self.robot_speed = 1
+
 
 
         self.init_calcs()
@@ -42,3 +49,5 @@ class Param:
         self.goal = self.goal.view(-1, 2)
         self.input_state = self.area_size*torch.rand((self.num_ped,4))
         self.input_state = self.input_state.view(-1, 4)
+        self.robot_init_pose = torch.tensor(self.robot_init_pose,requires_grad=True)
+        self.robot_goal= torch.tensor(self.robot_goal,requires_grad=True)

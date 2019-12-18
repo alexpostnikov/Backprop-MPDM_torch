@@ -1,15 +1,6 @@
 import torch
 
-input_state  = torch.tensor(([2.0,0.5,0.0,-1.],[2.0,0.5,0.0,-1.]))#, [1.0,2.5,0.0,0.0]) )
-k = 2.2
-DT = 0.2
-pedestrians_speed = 0.5
-
-
-
-
-def force_goal(input_state, goal):
-	global pedestrians_speed
+def force_goal(input_state, goal, pedestrians_speed, k):
 
 	# v_desired_x =  goal[:,0:1]  - input_state[:,0:1] 
 	# v_desired_y =  goal[:,1:2]  - input_state[:,1:2] 
