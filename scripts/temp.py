@@ -7,12 +7,12 @@ import rospy
 import time
 from utils import check_poses_not_the_same
 
-lr = 2*10**-5
+lr = 1*10**-5
 
 
 if __name__ == '__main__':
     rospy.init_node("vis")
-    v = Visualizer2()
+    v = Visualizer2("peds")
     param = Param()
     # torch.autograd.set_detect_anomaly(True)
     data = param.input_state.requires_grad_(True)
@@ -21,10 +21,11 @@ if __name__ == '__main__':
     robot_init_pose = param.robot_init_pose.requires_grad_(True)
 
     gradient = None
-    vv = Visualizer2("v2")
+    vv = Visualizer2("goals/ped",size=[0.1, 0.1, 0.5])
     vvvv = Visualizer2("robot", color=1)
-    learning_vis= Visualizer2("peds/learning",size=[0.2,0.2,1.0],color=2)
+    learning_vis= Visualizer2("peds/learning",size=[0.2,0.2,1.0],color=2, with_text = False)
     
+    inner_init_data = data.clone().detach()
     # learning_data.requires_grad_(False)
     for optim_number in range(0,100000):
         
@@ -51,7 +52,7 @@ if __name__ == '__main__':
             rf, af = calc_forces(inner_data, goals, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
             F = rf + af
             inner_data = pose_propagation(F, inner_data, param.DT, param.pedestrians_speed)
-            temp=calc_cost_function(param.a, param.b, param.e, goals, robot_init_pose, inner_data)
+            temp=calc_cost_function(param.a, param.b, param.e, goals, robot_init_pose, inner_data, inner_init_data)
             cost = cost + temp
             learning_data = torch.cat((learning_data,inner_data.clone()))
         learning_vis.publish(learning_data)
@@ -66,8 +67,8 @@ if __name__ == '__main__':
 
         if gradient is not None:
             with torch.no_grad():
-                data[1:,0:2] = data[1:,0:2] + lr * gradient[1:,0:2]
-                data[1:,2:4] = data[1:,2:4] + lr   * gradient[1:,2:4]
+                data[1:,0:2] = data[1:,0:2] + lr * torch.clamp(gradient[1:,0:2],max=0.1,min=-0.1)
+                data[1:,2:4] = data[1:,2:4] + 10000*lr * torch.clamp(gradient[1:,2:4],max=0.1,min=-0.1)
                 data.retain_grad()
 
         for i in range( data.shape[0]):

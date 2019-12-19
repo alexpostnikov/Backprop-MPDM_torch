@@ -7,12 +7,14 @@ from geometry_msgs.msg import Point, Pose, Vector3
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8]):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text = True):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
+        self.with_text = with_text
         self.point_scale = Vector3(size[0], size[1], size[2])
         self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/4)
         self.text_color = ColorRGBA(0, 0, 0, 1)
+
 
         self.point_color = ColorRGBA(1, 1, 1, 1)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
@@ -67,22 +69,23 @@ class Visualizer2:
             markerArray.markers.append(point_marker)
 
             # add some text
-            text_pose = Pose()
-            text_pose.position.x = agent[0]
-            text_pose.position.y = agent[1]
-            text_pose.position.z = self.point_scale.z+self.text_scale.z/1.7
-            text_marker = Marker(
-                id=id,
-                type=Marker.TEXT_VIEW_FACING,
-                action=Marker.ADD,
-                scale=self.text_scale,
-                color=self.text_color,  # 0 - point color
-                pose=text_pose,
-                text=str(n)
-            )
-            text_marker.header.frame_id = self.frame_id
-            id += 1
-            markerArray.markers.append(text_marker)
+            if self.with_text:
+                text_pose = Pose()
+                text_pose.position.x = agent[0]
+                text_pose.position.y = agent[1]
+                text_pose.position.z = self.point_scale.z+self.text_scale.z/1.7
+                text_marker = Marker(
+                    id=id,
+                    type=Marker.TEXT_VIEW_FACING,
+                    action=Marker.ADD,
+                    scale=self.text_scale,
+                    color=self.text_color,  # 0 - point color
+                    pose=text_pose,
+                    text=str(n)
+                )
+                text_marker.header.frame_id = self.frame_id
+                id += 1
+                markerArray.markers.append(text_marker)
 
             forces = agent[2:]
             f_num = 0
