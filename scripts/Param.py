@@ -6,7 +6,7 @@ class Param:
         self.loop_rate = 40.
         
         self.area_size = 15
-        self.num_ped = 10
+        self.num_ped = 15
 
         self.pedestrians_speed = 1.5
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
@@ -53,6 +53,7 @@ class Param:
         self.goal = self.area_size*torch.rand((self.num_ped,2))
         self.goal = self.goal.view(-1, 2)
         self.input_state = self.area_size*torch.rand((self.num_ped,4))
+        self.input_state[:,2:4] = self.input_state[:,2:4]/ self.area_size
         self.input_state = self.input_state.view(-1, 4)
         self.input_state[0,0:2] = self.robot_init_pose.clone().detach()
         self.goal[0,:] = self.robot_goal.clone().detach()
