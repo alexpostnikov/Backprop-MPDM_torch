@@ -7,11 +7,11 @@ from geometry_msgs.msg import Point, Pose, Vector3
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, predict = False):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, predict = False, size =[0.6, 0.6, 1.8]):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
         self.predict = predict
-        self.point_scale = Vector3(0.2, 0.2, 0.2)
+        self.point_scale = Vector3(size[0], size[1], size[2])
         self.point_color = ColorRGBA(1, 1, 1, 1)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
         self.first_arrow_scale = Vector3(0.08, 0.2, 0.2)

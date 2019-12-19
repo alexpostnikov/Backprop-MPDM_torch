@@ -16,7 +16,7 @@ def force_goal(input_state, goal, pedestrians_speed, k):
 def pose_propagation(force, state, DT, pedestrians_speed):
 	
 	# vx = pose.v*cos(pose.theta) + force.fx*dt
-	# vy = pose.v*sin(pose.theta) + force.fy*dt
+	# vy = pose.v*sin(pose.theta) + force.fy*dt	
 	vx_vy_uncl = state[:,2:4] + (force*DT)
 	dx_dy = state[:,2:4]*DT + (force*(DT**2))*0.5
 	

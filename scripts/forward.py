@@ -1,32 +1,37 @@
 import torch
 from force_attract_with_dest import force_goal, pose_propagation
 
-def calc_forces(state, goals, pedestrians_speed, k):
-    rep_force = calc_rep_forces(state[:, 0:2])
+# param.ped_radius, param.ped_mass, param.betta
+def calc_forces(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta):
+    rep_force = calc_rep_forces(state[:, 0:2], alpha, ped_radius, ped_mass, betta)
     # rep_force = torch.clamp(rep_force,min=-5., max = 5.)
     attr_force = force_goal(state, goals, pedestrians_speed, k)
     return rep_force, attr_force
 
 
-def calc_cost_function(a, b, e, robot_speed, robot_pose, goal, init_pose, agents_pose):
+def calc_cost_function(a, b, e, goal, init_pose, agents_pose):
     costs = torch.zeros(agents_pose.shape, requires_grad=False)
+    robot_pose = agents_pose[0,0:2]
+    robot_speed = agents_pose[0,2:4]
     # costs.retain_grad()
     PG = (robot_pose - init_pose)*(-init_pose+goal)/torch.norm(-init_pose+goal)
+    # print ("PG ", PG)
     # PG.retain_grad()
     # Blame
     B = torch.zeros(len(agents_pose), requires_grad=False)
     # B.retain_grad()
-    if robot_speed > e:
-        for n in range(len(agents_pose)):
+    if torch.norm(robot_speed) > e:
+        for n in range(1, len(agents_pose)):
             # TODO: go into matrix math
-            B[n] = torch.exp(-torch.norm(agents_pose[n]-robot_pose)/b)
+            B[n] = torch.exp(-torch.norm(agents_pose[n,0:2]-robot_pose)/b)
+            # print ("B[n] ", B[n])
     # Cost
     for n in range(len(B)):
         costs[n] = -a*PG+B[n]
     return costs
 
 
-def calc_rep_forces(state):
+def calc_rep_forces(state, A = 10, ped_radius= 0.3, ped_mass= 60, betta=0.08):
     # state = state_[:,0:2]
 
     # used to transform state from [N_rows*2] to [N_rows*(2*N_rows)]
@@ -83,12 +88,10 @@ def calc_rep_forces(state):
     # aka distance
     dist = torch.sqrt(dist) + 10000000 * \
         torch.eye(dist.shape[0])  # TODO: deal with 1/0,
-    # print ("dist: ", dist)
-    # const param from  formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
-    A = 2 * (10**3)
-    # according to Headed Social Force Model
-    force_amplitude = A * torch.exp((0.3 - dist) / 0.08)
-    # print ("force_amplitude: ", force_amplitude)
+    
+    #formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
+    force_amplitude = A * torch.exp((ped_radius - dist) / betta) ## according to Headed Social Force Model
+    
 
     # print ("delta_pose / (dist).matmul(auxullary) \n",delta_pose / (dist).matmul(auxullary))
     # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
