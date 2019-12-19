@@ -7,11 +7,13 @@ from geometry_msgs.msg import Point, Pose, Vector3
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, predict = False, size =[0.6, 0.6, 1.8]):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8]):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
-        self.predict = predict
         self.point_scale = Vector3(size[0], size[1], size[2])
+        self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/4)
+        self.text_color = ColorRGBA(0, 0, 0, 1)
+
         self.point_color = ColorRGBA(1, 1, 1, 1)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
         self.first_arrow_scale = Vector3(0.08, 0.2, 0.2)
@@ -31,20 +33,7 @@ class Visualizer2:
         ]
         pass
 
-    def predict_positions(self, data, samples = 10, dt = 0.1):
-        # out = data.copy()
-        out = []
-        for agent in data:
-            out.append(agent)
-            for sample in range(samples):
-                # predict_pose = [agent[0]+agent[2]*sample, agent[1] + agent[3] * sample]
-                out.append(agent)
-
-        return out
-
     def publish(self, data):
-        if self.predict:
-            data = self.predict_positions(data)
         # [ [x,y,x1,y1,x2,y2]
         #   [x,y,x1,y1]
         #   [x,y,x1,y1,x2,y2,x3,y3,...]
@@ -54,10 +43,12 @@ class Visualizer2:
         markerArray = MarkerArray()
         id = 0
         # first_point = True
-        for agent in data:
+        for n in range(len(data)):
+            agent = data[n]
             pose = Pose()
             pose.position.x = agent[0]
             pose.position.y = agent[1]
+            pose.position.z = self.point_scale.z/1.5
             pose.orientation.w = 1
 
             point_marker = Marker(
@@ -68,20 +59,31 @@ class Visualizer2:
                 color=self.point_color,  # 0 - point color
                 pose=pose
             )
-            if len(agent) <3:
+            if len(agent) < 3:
                 point_marker.type = Marker.CUBE
-
-            # if first_point:
-            #     first_point = False
-            # point_marker.type = Marker.CUBE
-            # point_marker.color = ColorRGBA(0,1,0,1)
-            # point_marker.scale.x*=2
-            # point_marker.scale.y*=2
-            # point_marker.scale.z*=2
 
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)
+
+            # add some text
+            text_pose = Pose()
+            text_pose.position.x = agent[0]
+            text_pose.position.y = agent[1]
+            text_pose.position.z = self.point_scale.z+self.text_scale.z/1.7
+            text_marker = Marker(
+                id=id,
+                type=Marker.TEXT_VIEW_FACING,
+                action=Marker.ADD,
+                scale=self.text_scale,
+                color=self.text_color,  # 0 - point color
+                pose=text_pose,
+                text=str(n)
+            )
+            text_marker.header.frame_id = self.frame_id
+            id += 1
+            markerArray.markers.append(text_marker)
+
             forces = agent[2:]
             f_num = 0
             first_arrow = True

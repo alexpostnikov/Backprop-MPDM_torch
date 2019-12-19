@@ -3,12 +3,12 @@ import torch
 class Param:
     def __init__(self):
         # ros
-        self.loop_rate = 40.
+        self.loop_rate = 10.
         
         self.area_size = 15
         self.num_ped = 15
 
-        self.pedestrians_speed = 1.5
+        self.pedestrians_speed = 1.0
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
         self.robot_goal = torch.tensor(([10.,20.]))
         self.robot_speed = 2.0
