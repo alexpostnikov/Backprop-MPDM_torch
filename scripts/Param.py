@@ -13,6 +13,8 @@ class Param:
         self.robot_goal = torch.tensor(([10.,20.]))
         self.robot_speed = 2.0
         
+        self.look_ahead_seconds = 4
+
         
         # mpdm params
         self.k = 2.2

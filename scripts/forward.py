@@ -29,7 +29,7 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose, agents_initial_pos
     if torch.norm(robot_speed) > e:
         for n in range(1, len(agents_pose)):
             # TODO: go into matrix math
-            B[n] = torch.exp(-torch.norm(agents_pose[n, 0:2]-robot_pose)/b)
+            B[n] = torch.exp(-torch.norm (agents_pose[n, 0:2]-robot_pose) /b )
 
     # TODO: add probability koefficient
     k_dist = torch.zeros(len(agents_pose), requires_grad=False)
@@ -38,12 +38,12 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose, agents_initial_pos
                                  agents_initial_pose[n, 0:2])*100))
     k_dist = torch.clamp(k_dist, max=1.0, min=0.0)
     # Cost
-    # print("k_dist", k_dist)
+
+    # print ("agents_initial_pose ", agents_pose[1:4,0:2])
+    # print("k_dist", k_dist.max())
     for n in range(len(B)):
         # costs[n] = -a*PG+B[n]
-
         B[n] = (-a*PG+1000*B[n])*k_dist[n]
-
     return B
 
 
