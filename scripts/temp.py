@@ -45,14 +45,15 @@ class Linear(nn.Module):
         state = input[0]
         cost = input[1]
         stacked_trajectories_for_visualizer = input[2]
-        rf, af = calc_forces(state, goals, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
+        param = input[3]
+        rf, af = calc_forces(state, param.goal, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
         F = rf + af
         output = pose_propagation(F, state, param.DT, param.pedestrians_speed)
-        temp = calc_cost_function(param.a, param.b, param.e, goals, robot_init_pose, output, observed_state)
+        temp = calc_cost_function(param.a, param.b, param.e, param.goal, state[0,0:2], output, observed_state)
         cost = cost + temp
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer,inner_data.clone()))
         # See the autograd section for explanation of what happens here.
-        return (output, cost, stacked_trajectories_for_visualizer) #LinearFunction.apply(input, self.weight, self.bias)
+        return (output, cost, stacked_trajectories_for_visualizer, param) #LinearFunction.apply(input, self.weight, self.bias)
 
     def extra_repr(self):
         # (Optional)Set the extra information about this module. You can test
@@ -91,49 +92,65 @@ if __name__ == '__main__':
     ped_goals_visualizer.publish(goals)
 
     inner_data = starting_poses.clone()
-    loss_fn  = torch.nn.L1Loss()
+    # loss_fn  = torch.nn.L1Loss()
     
     
-    optimizer = optim.Adam([inner_data], lr=0.0001)
-    
+    # optimizer = optim.Adam([inner_data], lr=0.0001)
+    lr = 0.0001
+    epochs = 100
+    # optimizer = optim.Adam([inner_data], lr=lr, weight_decay =lr/(epochs*0.5)  )
+    # optimizer = optim.SGD([inner_data], lr=0.0001, momentum=0.9)
+    # optimizer = optim.SGD([
+    #             {'params': [inner_data]}
+    #         ], lr=1e-2, momentum=0.9)
+
+    first_time = True
     #### OPTIMIZATION ####
+    # optimizer = optim.Adam([inner_data], lr=lr, weight_decay =lr/(epochs*0.5)  )
+    # TODO: insert inner_data into module
     for optim_number in range(0,10000):
         
         if rospy.is_shutdown():
             break
 
-        inner_data = starting_poses.clone()
         stacked_trajectories_for_visualizer = starting_poses.clone()
+        inner_data = starting_poses.clone()
 
         
 
-        #if inner_data.grad is not None:
-        #    inner_data.grad.data.zero_()
-        #if observed_state.grad is not None:
-        #    observed_state.grad.data.zero_()
+        if inner_data.grad is not None:
+           inner_data.grad.data.zero_()
+        if observed_state.grad is not None:
+           observed_state.grad.data.zero_()
 
         ### FORWARD PASS #### 
         cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
-        inner_data, cost, stacked_trajectories_for_visualizer = sequential((inner_data, cost, stacked_trajectories_for_visualizer))
+        inner_data2, cost, stacked_trajectories_for_visualizer, param = sequential((inner_data, cost, stacked_trajectories_for_visualizer, param))
             
         #### VISUALIZE ####
-        pedestrians_visualizer.publish(inner_data[1:])
-        robot_visualizer.publish(inner_data[0:1])
+        pedestrians_visualizer.publish(inner_data2[1:])
+        robot_visualizer.publish(inner_data2[0:1])
         learning_vis.publish(stacked_trajectories_for_visualizer)
         
         if (optim_number % 1 == 0):
             print ("       ---iter # ",optim_number, "  cost", cost.sum().item())
 
-        optimizer.zero_grad()
 
         #### CALC GRAD #### 
-        cost = cost.sum()
-        #cost.backward()
-        loss = loss_fn(cost,torch.tensor(np.inf))
-        loss.backward()
+        # print("cost",cost)
+        # exit()
+        cost = -cost.sum()
+        cost.backward()
+        optimizer.zero_grad()
+        # loss = loss_fn(cost,torch.tensor(np.inf))
+        # if first_time:
+        #     loss.backward(retain_graph=True)
+        #     first_time = False
+        # else:
+        # loss.backward()
         #print (loss.grad)
         #print ("starting_poses: ", starting_poses)
-        print (type(inner_data.grad))
+        # print (inner_data.grad)
         optimizer.step()
         #print ("starting_poses: ", starting_poses)
         #gradient =  inner_data.grad
