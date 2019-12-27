@@ -53,13 +53,14 @@ if __name__ == '__main__':
             F = rf + af
             inner_data = pose_propagation(F, inner_data, param.DT, param.pedestrians_speed)
             temp = calc_cost_function(param.a, param.b, param.e, goals, robot_init_pose, inner_data, observed_state)
-            cost = cost + temp
+            cost = cost + temp.view(-1,1)
             stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer,inner_data.clone()))
 
         learning_vis.publish(stacked_trajectories_for_visualizer)
         if (optim_number % 1 == 0):
             print ("       ---iter # ",optim_number, "  cost", cost.sum().item())
 
+        # print ("cost", cost)
         cost = cost.sum()
         cost.backward()
         gradient =  inner_data.grad
