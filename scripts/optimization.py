@@ -7,18 +7,20 @@ import rospy
 import time
 from utils import check_poses_not_the_same
 
-lr = 1*10**-5
+lr = 10**-5
+torch.manual_seed(2)
 
 
 if __name__ == '__main__':
     rospy.init_node("vis")
     pedestrians_visualizer = Visualizer2("peds")
-    torch.manual_seed(1)
+    
     param = Param()
     # torch.autograd.set_detect_anomaly(True)
-    observed_state = param.input_state
+    
     goals = param.goal
     cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
+    observed_state = param.input_state
     robot_init_pose = observed_state[0,0:2]#param.robot_init_pose.requires_grad_(True)
 
     gradient = None
@@ -29,22 +31,19 @@ if __name__ == '__main__':
     starting_poses = observed_state.clone()
 
     for optim_number in range(0,1000):
+        start = time.time()
+        if rospy.is_shutdown():
+            break
 
         inner_data = starting_poses.clone()
-        #inner_data.retain_grad()
         ped_goals_visualizer.publish(goals)
         pedestrians_visualizer.publish(inner_data[1:])
         robot_visualizer.publish(inner_data[0:1])
-
-        if rospy.is_shutdown():
-            break
 
         cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
 
         if inner_data.grad is not None:
             inner_data.grad.data.zero_()
-        if observed_state.grad is not None:
-            observed_state.grad.data.zero_()
 
         stacked_trajectories_for_visualizer = starting_poses.clone()
         for i in range(0, int(param.look_ahead_seconds/ param.DT)):
@@ -58,7 +57,8 @@ if __name__ == '__main__':
 
         learning_vis.publish(stacked_trajectories_for_visualizer)
         if (optim_number % 1 == 0):
-            print ("       ---iter # ",optim_number, "  cost", cost.sum().item())
+
+            print ('       ---iter # ',optim_number, "      cost: {:.1f}".format(cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
 
         # print ("cost", cost)
         cost = cost.sum()
@@ -78,38 +78,4 @@ if __name__ == '__main__':
                 if i != j:
                     starting_poses[i,0:2], starting_poses[j,0:2] = check_poses_not_the_same(starting_poses[i,0:2], starting_poses[j,0:2], gradient[i,0:2], gradient[j,0:2], lr)
 
-
-    # ####################
-    # inner_data = data.clone().detach()
-    # inner_data.retain_grad()
     print ("delta poses:", observed_state[:,0:2] - starting_poses[:,0:2])
-    # rf, af = calc_forces(inner_data, goals, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
-    # F = rf + af
-    # inner_data = pose_propagation(F, inner_data, param.DT, param.pedestrians_speed)
-
-
-    ###### 
-    # data = torch.rand((4,4)).requires_grad_(True)
-    # data.retain_grad()
-    # cost=calc_cost_function(param.a, param.b, param.e, goals, data[0,0:2], data.clone())
-    # cost = cost.view(-1,1)
-    # cost = cost.sum()
-    
-    # # cost.backward(data[:,0:1], retain_graph=True)
-    # cost.backward()
-    # gradient = data.grad
-    # print ("gradient:", gradient)
-    
-    # cost.backward(inner_data[:,0:2])
-    # gradient =  inner_data.grad
-    # print ("       ---grad:\n", gradient)
-
-    # gradient =  data.grad
-    # print ("       ---grad:\n", gradient)
-    # inner_data.grad.data.zero_()
-    # data.grad.data.zero_()
-
-
-
-    # cost.backward(data[:,2:4])
-    # print ("grad" , data.grad)
