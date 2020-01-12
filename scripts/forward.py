@@ -1,13 +1,13 @@
 import torch
 from force_attract_with_dest import force_goal, pose_propagation
-
+import numpy as np
+import math
 # param.ped_radius, param.ped_mass, param.betta
 
 
-def calc_forces(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta):
+def calc_forces(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
     rep_force = calc_rep_forces(
-        state[:, 0:2], alpha, ped_radius, ped_mass, betta)
-    # rep_force = torch.clamp(rep_force,min=-5., max = 5.)
+        state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
     attr_force = force_goal(state, goals, pedestrians_speed, k)
     return rep_force, attr_force
 
@@ -34,20 +34,20 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose, agents_initial_pos
     # TODO: add probability koefficient
     k_dist = torch.zeros(len(agents_pose), requires_grad=False)
     for n in range(1, len(agents_pose)):
-        k_dist[n] = (1/(torch.norm(agents_pose[n, 0:2] -
+        k_dist[n] = (10/(torch.norm(agents_pose[n, 0:2] -
                                  agents_initial_pose[n, 0:2])*100))
-    k_dist = torch.clamp(k_dist, max=1.0, min=0.0)
-    # Cost
 
-    # print ("agents_initial_pose ", agents_pose[1:4,0:2])
-    # print("k_dist", k_dist.max())
+    
+    k_dist = torch.clamp(k_dist, max=1.0, min=0.0)
+    
+    # Overall Cost
     for n in range(len(B)):
         # costs[n] = -a*PG+B[n]
         B[n] = (-a*PG+1000*B[n])*k_dist[n]
     return B
 
 
-def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08):
+def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):
     # state = state_[:,0:2]
 
     # used to transform state from [N_rows*2] to [N_rows*(2*N_rows)]
@@ -79,7 +79,7 @@ def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08):
          [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.]]
         '''
     delta_pose = (-state_concated_t + state_concated)
-
+    delta_pose += 0.0000001
     auxullary = torch.zeros(state_concated.shape[0], state_concated.shape[1])
     for i in range(state_concated.shape[0]):
         auxullary[i, 2*i] = 1.
@@ -99,7 +99,7 @@ def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08):
     aux.retain_grad()
     # sqrt(delta_x**2 +delta_y**2) -> distance
     # TODO: otherwise  when doing backprop: sqrt(0)' -> nan
-    dist_squared += 0.0000001
+    # dist_squared += 0.0000001
     dist = (dist_squared.matmul(aux))
     # aka distance
     dist = torch.sqrt(dist) + 10000000 * \
@@ -107,12 +107,28 @@ def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08):
 
     # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
     # according to Headed Social Force Model
+    
     force_amplitude = A * torch.exp((ped_radius - dist) / betta)
-
+    
     # print ("delta_pose / (dist).matmul(auxullary) \n",delta_pose / (dist).matmul(auxullary))
     # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
+
+    velocity_state_concated = velocity_state.clone().matmul(aux1)
+    indexes = np.linspace(0., velocity_state_concated.shape[1], (velocity_state_concated.shape[1]+1))
+    uneven_indexes = indexes[1:-1:2]        
+    even_indexes = indexes[0:-1:2]
+    velocity_atan = torch.atan2(velocity_state_concated[:,uneven_indexes], velocity_state_concated[:,even_indexes])
+    # print ("delta_pose", delta_pose)
+    dy = delta_pose[:,uneven_indexes].clone()
+    dx = delta_pose[:,even_indexes].clone()
+    deltapose_atan = torch.atan2(-dy, -dx)
+    phi = ((velocity_atan - deltapose_atan) + math.pi) % (2*math.pi) - math.pi
+    
+    
+    anisotropy = param_lambda + (1 - param_lambda)*(1+torch.cos(phi))/2.
+    anisotropy = anisotropy.matmul(auxullary)
     force = force_amplitude.matmul(
-        auxullary)*(delta_pose / (dist).matmul(auxullary))
+        auxullary)*(delta_pose / (dist).matmul(auxullary)) * anisotropy
     # print ("force BBbefore: ", force)
     force = (force * ((auxullary - 1) * -1))
     # print ("force before: ", force)

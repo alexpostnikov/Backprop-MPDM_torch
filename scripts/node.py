@@ -23,19 +23,23 @@ if __name__ == '__main__':
     # random env
     input_state = param.input_state
     goal = param.goal
-    cost = torch.zeros(param.num_ped, 2)
+    cost = torch.zeros(param.num_ped, 1)
     robot_pose = param.robot_init_pose
     robot_init_pose = param.robot_init_pose
     robot_goal = param.robot_goal
+    goals = param.goal
+    observed_state = param.input_state
+    robot_init_pose = observed_state[0,0:2]#param.robot_init_pose.requires_grad_(True)
 
     while not rospy.is_shutdown():
         rf, af = calc_forces(input_state, goal, param.pedestrians_speed,
-                             param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
+                             param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta, param.lamb)
         F = rf + af
         input_state = pose_propagation(
             F, input_state, param.DT, param.pedestrians_speed)
-        cost += calc_cost_function(param.a, param.b, param.e,
-                                   robot_goal, robot_init_pose, input_state[:, 0:2])
+        temp = calc_cost_function(param.a, param.b, param.e,
+                                   goals, robot_init_pose, input_state, param.input_state)
+        cost = cost + temp.view(-1,1)
         goal = param.generate_new_goal(goal, input_state)
 
         # visualisation staff
