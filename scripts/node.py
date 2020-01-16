@@ -37,9 +37,9 @@ if __name__ == '__main__':
         F = rf + af
         input_state = pose_propagation(
             F, input_state, param.DT, param.pedestrians_speed)
-        temp = calc_cost_function(param.a, param.b, param.e,
-                                   goals, robot_init_pose, input_state, param.input_state)
-        cost = cost + temp.view(-1,1)
+        # temp = calc_cost_function(param.a, param.b, param.e,
+        #                            goals, robot_init_pose, input_state, param.input_state)
+        # cost = cost + temp.view(-1,1)
         goal = param.generate_new_goal(goal, input_state)
 
         # visualisation staff

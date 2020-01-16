@@ -36,12 +36,12 @@ class Param:
 
         self.do_visualization = 1
 
-        self.generateMatricesAB()
+        self.generateMatrices()
         self.init_calcs()
 
 
 
-    def generateMatricesAB(self):
+    def generateMatrices(self):
         self.alpha = self.socForcePersonPerson["A"] * (1 - torch.eye(self.num_ped,self.num_ped))
         self.alpha[0,:] = self.socForceRobotPerson["A"]
         self.alpha[:,0] = self.socForceRobotPerson["A"]
@@ -81,10 +81,16 @@ class Param:
         self.loop_sleep = 1/self.loop_rate
         self.goal = self.area_size*torch.rand((self.num_ped,2))
         self.goal = self.goal.view(-1, 2)
-        self.input_state = self.area_size*torch.rand((self.num_ped,4))
-        self.input_state[:,2:4] = self.input_state[:,2:4]/ self.area_size
-        self.input_state = self.input_state.view(-1, 4)
-        self.input_state[0,0:2] = self.robot_init_pose.clone().detach()
+        
+        self.input_state_mean = self.area_size*torch.rand((self.num_ped,4))
+        self.input_state_mean[:,2:4] = self.input_state_mean[:,2:4]/ self.area_size
+        self.input_state_std = 0.2 * torch.rand((self.num_ped,4))
+        self.input_distrib = torch.distributions.normal.Normal(self.input_state_mean, self.input_state_std)    
+        
+        self.input_state = self.input_distrib.sample()
+        self.input_state[0,0:2] = self.robot_init_pose#.clone().detach()
+        self.input_state = self.input_state.view(-1, 4).requires_grad_(True)
+
         self.goal[0,:] = self.robot_goal.clone().detach()
         self.robot_init_pose = self.robot_init_pose.clone().detach().requires_grad_(True)
         # self.robot_goal= torch.tensor(self.robot_goal,requires_grad=True)
@@ -92,3 +98,10 @@ class Param:
 
 if __name__ == "__main__":
     p = Param()
+    print ("p.input_state_mean", p.input_state_mean)
+    print ("p.input_state_std ", p.input_state_std)
+    print (p.input_state)
+    m = torch.distributions.normal.Normal(torch.tensor([0.0, 5.2]), torch.tensor([1.0, 0.02]))
+    t = m.sample()  # normally distributed with loc=0 and scale=1
+    print (t)
+    

@@ -12,7 +12,7 @@ def calc_forces(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass,
     return rep_force, attr_force
 
 
-def calc_cost_function(a, b, e, goal, init_pose, agents_pose, agents_initial_pose):
+def calc_cost_function(a, b, e, goal, init_pose, agents_pose):
     agents_pose.retain_grad()
     # costs = torch.zeros((len(agents_pose), 2), requires_grad=True)
     robot_pose = agents_pose[0, 0:2].clone()
@@ -32,19 +32,22 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose, agents_initial_pos
             B[n] = torch.exp(-torch.norm (agents_pose[n, 0:2]-robot_pose) /b )
 
     # TODO: add probability koefficient
-    k_dist = torch.zeros(len(agents_pose), requires_grad=False)
-    for n in range(1, len(agents_pose)):
-        k_dist[n] = (10/(torch.norm(agents_pose[n, 0:2] -
-                                 agents_initial_pose[n, 0:2])*100))
-
+    # k_dist = torch.zeros(len(agents_pose), requires_grad=False)
+    # for n in range(1, len(agents_pose)):
+    #     k_dist[n] = (10/(torch.norm(agents_pose[n, 0:2] -
+    #                              agents_initial_pose[n, 0:2])*100))
+    # k_dist = torch.exp(agents_pose_distrib.log_prob(agents_pose)) * torch.sqrt(2 * math.pi * agents_pose_distrib.stddev**2)
+    # k_dist = k_dist[:,0:2]
     
-    k_dist = torch.clamp(k_dist, max=1.0, min=0.0)
-    
+    # k_dist = torch.sqrt(k_dist[:,0]**2 + k_dist[:,1]**2)
+    # print (k_dist[1])
+    # print ()
+    # k_dist = torch.clamp(k_dist, max=1.0, min=0.0)
     # Overall Cost
     for n in range(len(B)):
         # costs[n] = -a*PG+B[n]
-        B[n] = (-a*PG+1000*B[n])*k_dist[n]
-    return B
+        B[n] = (-a*PG+1000*B[n]) #*k_dist[n]
+    return B + 1000
 
 
 def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):
