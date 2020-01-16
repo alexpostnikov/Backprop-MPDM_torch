@@ -144,18 +144,17 @@ if __name__ == '__main__':
 
         # policys = []
         # param.robot_speed = robot_init_speed
-        # robot_policys = generate_robot_policys(
-        #     robot_init_pose, robot_init_speed)  # TODO: realize that
-        # for robot_init_pose_sample, robot_speed_sample in robot_policys:
+        # robot_policys = generate_robot_policys(robot_init_speed)  # TODO: realize that
+        # for robot_speed_sample in robot_policys:
         #     param.robot_speed = robot_speed_sample
         #     starting_poses, cost = optimisation(
         #         EPOCHS=5, lr=10**-4, starting_poses=starting_poses, goals=goals, robot_init_pose=robot_init_pose_sample, param=param)
-        #     policys.append([starting_poses, cost])       
-        
+        #     policys.append([param.robot_speed, starting_poses, cost])       
+
         #### find the best policy
         # best_policy = policys[0]
         # for policy in policys:
-        #     if best_policy[1]<policy[1]:
+        #     if best_policy[2]<policy[1]:
         #         best_policy = policy
 
 
