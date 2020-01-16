@@ -4,3 +4,4 @@ scripts/__pycache__/*
 scripts/.vscode/*
 .vscode/*
 .ipynb_checkpoints/*
+*.pyc
