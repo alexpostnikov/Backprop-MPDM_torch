@@ -10,9 +10,7 @@ class Param:
 
         self.pedestrians_speed = 1.0
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
-        self.robot_goal = torch.tensor(([10.,20.]))
-        self.robot_speed = 2.0
-        
+        self.robot_goal = torch.tensor(([10.,20.]))        
         self.look_ahead_seconds = 4
 
         
