@@ -87,6 +87,8 @@ if __name__ == '__main__':
     # optimizer = optim.Adam(sequential.parameters(), lr=0.0001)
     
     #### OPTIMIZATION ####
+    # optimizer = optim.Adam([inner_data], lr=lr, weight_decay =lr/(epochs*0.5)  )
+    # TODO: insert inner_data into module
     for optim_number in range(0,10000):
         
         if rospy.is_shutdown():
@@ -94,6 +96,7 @@ if __name__ == '__main__':
 
         inner_data = torch.nn.Parameter(starting_poses.clone())
         stacked_trajectories_for_visualizer = starting_poses.clone()
+        inner_data = starting_poses.clone()
 
         if inner_data.grad is not None:
            inner_data.grad.data.zero_()
@@ -106,8 +109,8 @@ if __name__ == '__main__':
         inner_data, cost, stacked_trajectories_for_visualizer = sequential((inner_data, cost, stacked_trajectories_for_visualizer))
             
         #### VISUALIZE ####
-        pedestrians_visualizer.publish(inner_data[1:])
-        robot_visualizer.publish(inner_data[0:1])
+        pedestrians_visualizer.publish(inner_data2[1:])
+        robot_visualizer.publish(inner_data2[0:1])
         learning_vis.publish(stacked_trajectories_for_visualizer)
         
         if (optim_number % 1 == 0):
