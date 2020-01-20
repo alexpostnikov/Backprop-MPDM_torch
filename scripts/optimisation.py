@@ -35,8 +35,7 @@ class Linear(nn.Module):
 
     def forward(self, input):
 
-        input_state, cost, stacked_trajectories_for_visualizer = input
-        state = 1 * input_state
+        state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
         rf, af = calc_forces(state, goals, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
 
         F = rf + af
@@ -50,7 +49,7 @@ class Linear(nn.Module):
 
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer,state.clone()))
 
-        return (out, new_cost, stacked_trajectories_for_visualizer) 
+        return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose) 
 
 if __name__ == '__main__':
     # torch.autograd.set_detect_anomaly(True)

@@ -5,3 +5,4 @@ scripts/.vscode/*
 .vscode/*
 .ipynb_checkpoints/*
 *.log
+*.pyc
