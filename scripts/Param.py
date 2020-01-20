@@ -12,13 +12,13 @@ class Param:
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
         self.robot_goal = torch.tensor(([10.,20.]))
         self.robot_speed = 2.0
-        
+        self.number_of_layers = 10
         self.look_ahead_seconds = 4
 
         
         # mpdm params
         self.k = 2.3
-        self.DT = 0.2
+        self.DT = 0.3
         self.alpha = 10.66
         
         self.ped_mass = 60
@@ -29,7 +29,7 @@ class Param:
         self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
         self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
         
-        self.a = 10
+        self.a = 0.1
         self.b = 2
         self.e = 0.001
         self.robot_speed = 1
@@ -78,16 +78,23 @@ class Param:
         return is_achieved<0.3
 
     def init_calcs(self):
+
         self.loop_sleep = 1/self.loop_rate
-        self.goal = self.area_size*torch.rand((self.num_ped,2))
+        self.goal_mean = self.area_size*torch.rand((self.num_ped,2))
+        self.goal_std = 20.0 * torch.rand((self.num_ped,2))
+        self.goal_distrib = torch.distributions.normal.Normal(self.goal_mean, self.goal_std)
+
+        self.goal = self.goal_mean
         self.goal = self.goal.view(-1, 2)
         
         self.input_state_mean = self.area_size*torch.rand((self.num_ped,4))
         self.input_state_mean[:,2:4] = self.input_state_mean[:,2:4]/ self.area_size
-        self.input_state_std = 0.2 * torch.rand((self.num_ped,4))
-        self.input_distrib = torch.distributions.normal.Normal(self.input_state_mean, self.input_state_std)    
         
-        self.input_state = self.input_distrib.sample()
+        self.input_state_std = 2.0 * torch.rand((self.num_ped,4))
+        self.input_distrib = torch.distributions.normal.Normal(self.input_state_mean, self.input_state_std)
+
+        #self.input_state = self.input_distrib.sample()
+        self.input_state = self.input_state_mean
         self.input_state[0,0:2] = self.robot_init_pose#.clone().detach()
         self.input_state = self.input_state.view(-1, 4).requires_grad_(True)
 

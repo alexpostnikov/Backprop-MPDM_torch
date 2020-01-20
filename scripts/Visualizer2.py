@@ -7,14 +7,14 @@ from geometry_msgs.msg import Point, Pose, Vector3
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text = True):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text = True, starting_id = 0):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
         self.with_text = with_text
         self.point_scale = Vector3(size[0], size[1], size[2])
         self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/4)
         self.text_color = ColorRGBA(0, 0, 0, 1)
-
+        self.starting_id = starting_id
 
         self.point_color = ColorRGBA(1, 1, 1, 1)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
@@ -43,7 +43,9 @@ class Visualizer2:
         # x,y - coord of point
         # xn,yn - n forces
         markerArray = MarkerArray()
+        
         id = 0
+
         # first_point = True
         for n in range(len(data)):
             agent = data[n]
@@ -81,7 +83,7 @@ class Visualizer2:
                     scale=self.text_scale,
                     color=self.text_color,  # 0 - point color
                     pose=text_pose,
-                    text=str(n)
+                    text=str(n+self.starting_id)
                 )
                 text_marker.header.frame_id = self.frame_id
                 id += 1
