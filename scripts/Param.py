@@ -5,13 +5,13 @@ class Param:
         # ros
         self.loop_rate = 30.
         
-        self.num_ped = 3
+        self.num_ped = 10
         self.optim_epochs = 5
-        self.number_of_layers = 10
+        self.number_of_layers = 5
         self.do_visualization = 1
         self.do_logging = 0
 
-        self.area_size = 3
+        self.area_size = 10
         self.pedestrians_speed = 1.0
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
         self.look_ahead_seconds = 4
@@ -30,10 +30,10 @@ class Param:
         # self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
         # self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
 
-        self.a = 0.001
-        self.b = 3
-        self.e = 0.001
-        self.robot_speed = 1
+        self.a = 0.02
+        self.b = 5 # 
+        self.e = 0.001 # min speed fo blame
+        self.robot_speed = 1.0
 
         
         # self.update_scene(new_pose_mean, new_goal_mean)
@@ -96,7 +96,7 @@ class Param:
     def init_calcs(self):
         self.loop_sleep = 1/self.loop_rate
         self.goal_mean = self.area_size*torch.rand((self.num_ped,2))
-        self.goal_std = 2.0 * torch.rand((self.num_ped,2))
+        self.goal_std = 20.0 * torch.rand((self.num_ped,2))
         self.goal_distrib = torch.distributions.normal.Normal(self.goal_mean, self.goal_std)
 
         self.goal = self.goal_mean

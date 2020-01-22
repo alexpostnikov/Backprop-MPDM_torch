@@ -128,17 +128,17 @@ class Repulsive_forces():
 
 
 rep_f = Repulsive_forces()
-def calc_forces(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
+def calc_forces(state, goals, pedestrians_speed, robot_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
+
     rep_force = rep_f.calc_rep_forces(state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
-    # rep_force[0,:] = 0 * rep_force[0,:]
-    attr_force = force_goal(state, goals, pedestrians_speed, k)
+    attr_force = force_goal(state, goals, pedestrians_speed,robot_speed, k)
     return rep_force, attr_force
 
-def calc_forces_(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
-    rep_force = calc_rep_forces(
-        state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
-    attr_force = force_goal(state, goals, pedestrians_speed, k)
-    return rep_force, attr_force
+# def calc_forces_(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
+#     rep_force = calc_rep_forces(
+#         state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
+#     attr_force = force_goal(state, goals, pedestrians_speed, k)
+#     return rep_force, attr_force
 
 
 def calc_cost_function(a, b, e, goal, init_pose, agents_pose):
@@ -171,7 +171,7 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose):
     B = (-a*PG+1*B) #*k_dist[n]
     # print (B)
     # exit()
-    return B
+    return B + 1000
 
 
 def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):

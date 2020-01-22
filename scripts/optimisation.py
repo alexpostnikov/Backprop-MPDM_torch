@@ -36,7 +36,7 @@ class Linear(nn.Module):
     def forward(self, input):
 
         state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
-        rf, af = calc_forces(state, goals, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
+        rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
 
         F = rf + af
         # if probability_matrix is None:

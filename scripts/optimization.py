@@ -15,8 +15,8 @@ import numpy as np
 
 import logging
 
-lr = 10**-4
-torch.manual_seed(9)
+lr = 10**-3
+# torch.manual_seed(2)
 
 
 
@@ -46,9 +46,9 @@ class Linear(nn.Module):
 
     def forward(self, input):
 
-        input_state, cost, stacked_trajectories_for_visualizer = input
+        input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
         state = 1 * input_state
-        rf, af = calc_forces(state, goals, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
+        rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
 
         F = rf + af
         out = pose_propagation(F, state, param.DT, param.pedestrians_speed)
@@ -60,12 +60,14 @@ class Linear(nn.Module):
         new_cost = cost + ( temp.view(-1,1))
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer,state.clone()))
         
-        return (out, new_cost, stacked_trajectories_for_visualizer) 
+        return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose) 
 
 
 
-def opti(epochs, starting_poses, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer):
+def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer):
     for epoch_numb in range(0,epochs):
+        if rospy.is_shutdown():
+                break
         start = time.time()    
         stacked_trajectories_for_visualizer = starting_poses.clone()
         inner_data = starting_poses.clone().detach()
@@ -76,12 +78,12 @@ def opti(epochs, starting_poses, param, goals, lr, ped_goals_visualizer, initial
 
         probability_matrix = get_poses_probability(inner_data, param.input_distrib)
         goal_prob = get_poses_probability(goals, param.goal_distrib)
-        _, cost, stacked_trajectories_for_visualizer = sequential((inner_data, cost, stacked_trajectories_for_visualizer))
-        
+        _, cost, stacked_trajectories_for_visualizer, _,_ ,_ = model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose))
+        # print (goals)
         #### VISUALIZE ####
         if param.do_visualization:
             ped_goals_visualizer.publish(goals)
-            initial_pedestrians_visualizer.publish(observed_state)
+            # initial_pedestrians_visualizer.publish(observed_state)
             pedestrians_visualizer.publish(starting_poses[1:])
             robot_visualizer.publish(starting_poses[0:1])
             learning_vis.publish(stacked_trajectories_for_visualizer)
@@ -105,22 +107,17 @@ def opti(epochs, starting_poses, param, goals, lr, ped_goals_visualizer, initial
                 starting_poses[1:,0:2] = starting_poses[1:,0:2] + delta_pose
                 # starting_poses[1:,2:4] = starting_poses[1:,2:4] + delta_vel
                 goals.grad[0,:] = goals.grad[0,:] * 0
-                goals = (goals + torch.clamp(lr * goals.grad, max=0.2, min=-0.2))#.requires_grad_(True)
+                
+                goals = (goals + torch.clamp(lr* 100 * goals.grad, max=0.2, min=-0.2))#.requires_grad_(True)
 
         goals.requires_grad_(True)
-        # with torch.no_grad():
-        #     for i in range( starting_poses.shape[0]):
-        #         for j in range(i,starting_poses.shape[0]):
-        #             # check that they are not in the same place
-        #             if i != j:
-        #                 starting_poses[i,0:2], starting_poses[j,0:2] = check_poses_not_the_same(starting_poses[i,0:2], starting_poses[j,0:2], gradient[i,0:2], gradient[j,0:2], lr)
-
+ 
         if goals.grad is not None:
             goals.grad.data.zero_()
         if inner_data.grad is not None:
             inner_data.grad.data.zero_()
-        if observed_state.grad is not None:
-            observed_state.grad.data.zero_()
+        # if observed_state.grad is not None:
+        #     observed_state.grad.data.zero_()
         if starting_poses.grad is not None:
             starting_poses.grad.data.zero_()
         if (epoch_numb % 1 == 0):
@@ -168,150 +165,98 @@ if __name__ == '__main__':
         learning_vis = Visualizer2("peds/learning",size=[0.2,0.2,1.0],color=2, with_text = False)
 
 
-    for i in range (1000):
-        if rospy.is_shutdown():
-                break
-        observed_state = param.input_state.clone().detach()
+
+    observed_state = param.input_state.clone().detach()
+    cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
+    robot_init_pose = observed_state[0,0:2]#param.robot_init_pose.requires_grad_(True)
+    
+    goals = param.goal.clone().detach().requires_grad_(True)
+    # ##### MODEL CREATING ######
+    modules = []
+    for i in range (0, param.number_of_layers):
+        modules.append(Linear())
+
+    sequential = nn.Sequential(*modules)
+    # #### OPTIMIZATION ####
+    global_start_time = time.time()
+
+    starting_poses = observed_state.clone()
+    param.optim_epochs = 10000
+    cost = optimize(param.optim_epochs, sequential ,starting_poses, robot_init_pose, param,goals ,lr,ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer)
+    
+    print ("average time for step: ", (time.time()-global_start_time)/(param.optim_epochs+1))
+    
+
+
+        
+    #############################################################################################################
+    #############################################################################################################
+    '''
+    for epoch_numb in range(0,param.optim_epochs):
+        start = time.time()    
+        stacked_trajectories_for_visualizer = starting_poses.clone()
+        inner_data = starting_poses.clone().detach()
+        inner_data.requires_grad_(True)
+
+        ### FORWARD PASS #### 
         cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
-        robot_init_pose = observed_state[0,0:2]#param.robot_init_pose.requires_grad_(True)
+
+        probability_matrix = get_poses_probability(inner_data, param.input_distrib)
+        goal_prob = get_poses_probability(goals, param.goal_distrib)
+        _, cost, stacked_trajectories_for_visualizer = sequential((inner_data, cost, stacked_trajectories_for_visualizer))
         
-        goals = param.goal.clone().detach().requires_grad_(True)
-        # ##### MODEL CREATING ######
-        modules = []
-        for i in range (0, param.number_of_layers):
-            modules.append(Linear())
+        #### VISUALIZE ####
+        if param.do_visualization:
+            ped_goals_visualizer.publish(goals)
+            initial_pedestrians_visualizer.publish(observed_state)
+            pedestrians_visualizer.publish(starting_poses[1:])
+            robot_visualizer.publish(starting_poses[0:1])
+            learning_vis.publish(stacked_trajectories_for_visualizer)
+            initial_ped_goals_visualizer.publish(param.goal)
 
-        sequential = nn.Sequential(*modules)
-        # #### OPTIMIZATION ####
-        global_start_time = time.time()
-        # epoch_numb = 0
+        #### CALC GRAD ####         
+        # prob_cost  = probability_matrix[1:-1,:]
 
-        policies = ["stop", "go-solo", "left", "right"]
-        # policies = ["go-solo"]
-        results = []
-        for policy in policies:
-            starting_poses = observed_state.clone()
-            if policy == "stop":
-                starting_poses[0,2:4] = 0 * starting_poses[0,2:4].clone()
-            if policy == "right":
-                # Vx,Vy = rotate([0,0],[starting_poses[0,2].data, starting_poses[0,3].data], -math.pi/2.)
-                Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], -math.pi/2.)
-                goals[0,0:2] = torch.tensor(([Gx, Gy ]))
-            if policy == "left":
-                Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], math.pi/2.)
-                goals[0,0:2] = torch.tensor(([Gx, Gy ]))
-            # if policy == "back":
-            #     starting_poses[0,2:4] = -1 * starting_poses[0,2:4].clone()
-            cost = opti(param.optim_epochs,starting_poses,param,goals ,lr,ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer)
-            results.append(cost)
+        prob_cost  = cost * (probability_matrix) * torch.sqrt(goal_prob)
+        prob_cost.sum().backward()
+        gradient = inner_data.grad
+        gradient[0,:] *= 0
         
-        print (np.array(results) - min(results))
-        pol_numb = results.index(min(results))
-        policy = policies[pol_numb]
-        print (policy)
-        with torch.no_grad():
-            if policy == "stop":
-                    param.input_state[0,2:4] = 0 * param.input_state[0,2:4].clone()
-            if policy == "right":
-                Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], -math.pi/2.)
-                goals[0,0:2] = torch.tensor(([Gx, Gy ]))
-            if policy == "left":
-                Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], math.pi/2.)
-                goals[0,0:2] = torch.tensor(([Gx, Gy ]))
-            if policy == "back":
-                starting_poses[0,2:4] = -1 * starting_poses[0,2:4].clone()
+        if gradient is not None:
+            with torch.no_grad():
+                delta_pose = lr *gradient[1:,0:2]
 
-        
-        #############################################################################################################
-        #############################################################################################################
-        '''
-        for epoch_numb in range(0,param.optim_epochs):
-            start = time.time()    
-            stacked_trajectories_for_visualizer = starting_poses.clone()
-            inner_data = starting_poses.clone().detach()
-            inner_data.requires_grad_(True)
+                delta_vel = lr * gradient[1:,2:4]
+                delta_pose = torch.clamp(delta_pose,max=0.01,min=-0.01)
+                delta_vel = torch.clamp(delta_vel,max=0.02,min=-0.02)
+                starting_poses[1:,0:2] = starting_poses[1:,0:2] + delta_pose
+                # starting_poses[1:,2:4] = starting_poses[1:,2:4] + delta_vel
+                goals.grad[0,:] = goals.grad[0,:] * 0
+                goals = (goals + torch.clamp(lr * goals.grad,max=0.2,min=-0.2))#.requires_grad_(True)
 
-            ### FORWARD PASS #### 
-            cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
+        goals.requires_grad_(True)
+        # with torch.no_grad():
+        #     for i in range( starting_poses.shape[0]):
+        #         for j in range(i,starting_poses.shape[0]):
+        #             # check that they are not in the same place
+        #             if i != j:
+        #                 starting_poses[i,0:2], starting_poses[j,0:2] = check_poses_not_the_same(starting_poses[i,0:2], starting_poses[j,0:2], gradient[i,0:2], gradient[j,0:2], lr)
 
-            probability_matrix = get_poses_probability(inner_data, param.input_distrib)
-            goal_prob = get_poses_probability(goals, param.goal_distrib)
-            _, cost, stacked_trajectories_for_visualizer = sequential((inner_data, cost, stacked_trajectories_for_visualizer))
-            
-            #### VISUALIZE ####
-            if param.do_visualization:
-                ped_goals_visualizer.publish(goals)
-                initial_pedestrians_visualizer.publish(observed_state)
-                pedestrians_visualizer.publish(starting_poses[1:])
-                robot_visualizer.publish(starting_poses[0:1])
-                learning_vis.publish(stacked_trajectories_for_visualizer)
-                initial_ped_goals_visualizer.publish(param.goal)
-
-            #### CALC GRAD ####         
-            # prob_cost  = probability_matrix[1:-1,:]
-
-            prob_cost  = cost * (probability_matrix) * torch.sqrt(goal_prob)
-            prob_cost.sum().backward()
-            gradient = inner_data.grad
-            gradient[0,:] *= 0
-            
-            if gradient is not None:
-                with torch.no_grad():
-                    delta_pose = lr *gradient[1:,0:2]
-
-                    delta_vel = lr * gradient[1:,2:4]
-                    delta_pose = torch.clamp(delta_pose,max=0.01,min=-0.01)
-                    delta_vel = torch.clamp(delta_vel,max=0.02,min=-0.02)
-                    starting_poses[1:,0:2] = starting_poses[1:,0:2] + delta_pose
-                    # starting_poses[1:,2:4] = starting_poses[1:,2:4] + delta_vel
-                    goals.grad[0,:] = goals.grad[0,:] * 0
-                    goals = (goals + torch.clamp(lr * goals.grad,max=0.2,min=-0.2))#.requires_grad_(True)
-
-            goals.requires_grad_(True)
-            # with torch.no_grad():
-            #     for i in range( starting_poses.shape[0]):
-            #         for j in range(i,starting_poses.shape[0]):
-            #             # check that they are not in the same place
-            #             if i != j:
-            #                 starting_poses[i,0:2], starting_poses[j,0:2] = check_poses_not_the_same(starting_poses[i,0:2], starting_poses[j,0:2], gradient[i,0:2], gradient[j,0:2], lr)
-
-            if goals.grad is not None:
-                goals.grad.data.zero_()
-            if inner_data.grad is not None:
-                inner_data.grad.data.zero_()
-            if observed_state.grad is not None:
-                observed_state.grad.data.zero_()
-            if starting_poses.grad is not None:
-                starting_poses.grad.data.zero_()
-            if (epoch_numb % 1 == 0):
-                pass
-                # print ('       ---iter # ',epoch_numb, "      cost: {:.1f}".format(prob_cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
-                if param.do_logging:
-                    logger.debug('       ---iter # '+ str(epoch_numb) + "      cost: {:.1f}".format(prob_cost.sum().item()) +'      iter time: '+ "{:.3f}".format(time.time()-start))
-        '''
-        ################################################################################################################################################
-        ################################################################################################################################################
-
-        # print ("average time for step: ", (time.time()-global_start_time)/(epoch_numb+1))
-        # if param.do_logging:
-        #     logger.info("average time for step: " +str((time.time()-global_start_time)/(epoch_numb+1)) )
-
-        #########################
-        with torch.no_grad():
-            rf, af = calc_forces(param.input_state, param.goal, param.pedestrians_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
-            F = rf + af
-
-            # if probability_matrix is None:
-            observed_state_new = pose_propagation(F, param.input_state, param.DT, param.pedestrians_speed)
-            param.update_scene(observed_state_new, param.goal)
-            goals = param.goal
-            if torch.isnan(goals).sum().data > 0:
-                print (torch.isnan(goals).sum().data)
-            goals = param.generate_new_goal(goals, param.input_state)
-            goals.requires_grad_(True)
-            if torch.isnan(goals).sum().data > 0:
-                print (torch.isnan(goals).sum().data)
-
+        if goals.grad is not None:
+            goals.grad.data.zero_()
+        if inner_data.grad is not None:
+            inner_data.grad.data.zero_()
+        if observed_state.grad is not None:
+            observed_state.grad.data.zero_()
+        if starting_poses.grad is not None:
+            starting_poses.grad.data.zero_()
+        if (epoch_numb % 1 == 0):
+            pass
+            # print ('       ---iter # ',epoch_numb, "      cost: {:.1f}".format(prob_cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
+            if param.do_logging:
+                logger.debug('       ---iter # '+ str(epoch_numb) + "      cost: {:.1f}".format(prob_cost.sum().item()) +'      iter time: '+ "{:.3f}".format(time.time()-start))
+    '''
+    
 
 
 # from tensorboardX import SummaryWriter

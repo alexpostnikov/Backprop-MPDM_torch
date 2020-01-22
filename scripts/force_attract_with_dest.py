@@ -1,11 +1,12 @@
 import torch
 
-def force_goal(input_state, goal, pedestrians_speed, k):
+def force_goal(input_state, goal, pedestrians_speed, robot_speed, k):
 
-	v_desired_x_y =  goal[:,0:2]  - input_state[:,0:2] 
-
-	v_desired_ = torch.sqrt(v_desired_x_y.clone()[:,0:1]**2 + v_desired_x_y.clone()[:,1:2]**2)
-	v_desired_x_y *= pedestrians_speed / v_desired_
+	v_desired_x_y =  goal[:,0:2]  - input_state[:,0:2]
+	v_desired_ = torch.sqrt(v_desired_x_y.clone()[:,0:1]**2 + v_desired_x_y.clone()[:,1:2]**2)	
+	v_desired_x_y[1:-1, :] *= pedestrians_speed / v_desired_[1:-1, :]
+	v_desired_x_y[0,:] *= robot_speed / v_desired_[0,:]
+	# print (pedestrians_speed)
 	F_attr = k * (v_desired_x_y - input_state[:,2:4])
 	return F_attr
 
