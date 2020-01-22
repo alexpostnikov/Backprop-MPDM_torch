@@ -182,7 +182,9 @@ if __name__ == '__main__':
 
     starting_poses = observed_state.clone()
     param.optim_epochs = 10000
-    cost = optimize(param.optim_epochs, sequential ,starting_poses, robot_init_pose, param,goals ,lr,ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer)
+    cost = optimize(param.optim_epochs, sequential ,starting_poses, 
+        robot_init_pose, param,goals ,lr,ped_goals_visualizer, initial_pedestrians_visualizer, 
+        pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer)
     
     print ("average time for step: ", (time.time()-global_start_time)/(param.optim_epochs+1))
     

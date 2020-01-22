@@ -5,13 +5,13 @@ class Param:
         # ros
         self.loop_rate = 30.
         
-        self.num_ped = 10
+        self.num_ped = 3
         self.optim_epochs = 5
         self.number_of_layers = 5
         self.do_visualization = 1
         self.do_logging = 0
 
-        self.area_size = 10
+        self.area_size = 5
         self.pedestrians_speed = 1.0
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
         self.look_ahead_seconds = 4
