@@ -49,14 +49,15 @@ class Linear(nn.Module):
         input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
         state = 1 * input_state
         rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
-
+        # print("rf, af",[rf, af])
         F = rf + af
         out = pose_propagation(F, state, param.DT, param.pedestrians_speed)
-        temp = calc_cost_function(param.a, param.b, param.e, goals, robot_init_pose, out)
+        temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out)
         if torch.isnan(temp).sum() > 0:
             pass
         if (temp < 0).sum() > 0:
             print ("WARNING, NEGATIVE COSTS")
+        # print("temp",temp)
         new_cost = cost + ( temp.view(-1,1))
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer,state.clone()))
         

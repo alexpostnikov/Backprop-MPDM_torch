@@ -24,12 +24,15 @@ def apply_policy(policy, state, goals, robot_speed):
         Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], -math.pi/4.)
         # with torch.no_grad():
         goals[0,0:2] =  torch.tensor(([Gx, Gy ]))
+        robot_speed = 1.0
+        
         # goals[0,0:2] = torch.tensor(([Gx, Gy ]))
         # return state, goals, robot_speed
     if policy == "left":
         Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], math.pi/4.)
         # with torch.no_grad():
         goals[0,0:2] =  torch.tensor(([Gx, Gy ]))
+        robot_speed = 1.0
         # return state, goals, robot_speed
 
     if policy == "fast":
@@ -96,7 +99,7 @@ if __name__ == '__main__':
             starting_poses, goals_in_policy, param.robot_speed = apply_policy(policy, starting_poses, goals.clone(), param.robot_speed)
             goals_in_policy.requires_grad_(True)
             cost = optimize(param.optim_epochs, sequential, starting_poses, 
-                robot_init_pose, param, 
+                param.robot_init_pose, param, 
                 goals_in_policy ,lr,ped_goals_visualizer, 
                 initial_pedestrians_visualizer, 
                 pedestrians_visualizer, robot_visualizer, 

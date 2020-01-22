@@ -5,7 +5,7 @@ class Param:
         # ros
         self.loop_rate = 30.
         
-        self.num_ped = 3
+        self.num_ped = 1
         self.optim_epochs = 5
         self.number_of_layers = 5
         self.do_visualization = 1
