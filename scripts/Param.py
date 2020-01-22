@@ -84,6 +84,8 @@ class Param:
                 if is_achived[i].item() == True:
                     goals[i,0] = self.area_size*torch.rand(1)
                     goals[i,1] = self.area_size*torch.rand(1)
+                if i == 0:
+                    self.robot_init_pose = input_state[i,0:2].clone()
         self.goal_mean = goals
         self.goal = goals
         return goals
