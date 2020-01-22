@@ -8,20 +8,22 @@ import numpy as np
 import torch
 from forward import calc_forces, pose_propagation, calc_cost_function
 from Param import Param
-from optimisation import Linear, get_poses_probability
+from optimization import  get_poses_probability
+from optimisation import Linear
 import torch.nn as nn
 import time
 from utils import check_poses_not_the_same
 
 
 def optimisation(EPOCHS, lr, starting_poses, goals, robot_init_pose, param):
+    print (starting_poses.requires_grad)
     for epoch_numb in range(0, EPOCHS):
         start = time.time()
         if rospy.is_shutdown():
             break
 
-        stacked_trajectories_for_visualizer = starting_poses.clone()
-        inner_data = starting_poses.clone()
+        stacked_trajectories_for_visualizer = starting_poses.clone().detach()
+        inner_data = starting_poses.clone().detach()
         inner_data.requires_grad_(True)
 
         ### FORWARD PASS ####
@@ -32,10 +34,11 @@ def optimisation(EPOCHS, lr, starting_poses, goals, robot_init_pose, param):
         # writer.add_graph(sequential, ((inner_data, cost, stacked_trajectories_for_visualizer, probability_matrix),))
 
         # exit()
-
+        
         probability_matrix = get_poses_probability(
             inner_data, param.input_distrib)
-        _, cost, stacked_trajectories_for_visualizer, _, _, _ = sequential(
+        
+        _, cost, stacked_trajectories_for_visualizer,_,_,_ = sequential(
             (inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose))
 
         #### VISUALIZE ####
@@ -107,6 +110,7 @@ def optimisation(EPOCHS, lr, starting_poses, goals, robot_init_pose, param):
 if __name__ == '__main__':
     node = rospy.init_node('mpdm')
     param = Param()
+    # torch.autograd.set_detect_anomaly(True)
     # visualisation staff
     vis_peds = Visualizer2('/peds')
     vis_robot = Visualizer2('/robot', color=1)
@@ -119,7 +123,7 @@ if __name__ == '__main__':
     # visualisation staff
 
     # starting env
-    observed_state = param.input_state.clone()
+    observed_state = param.input_state.clone().detach()
     goals = param.goal
     cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
     robot_init_pose = observed_state[0, 0:2]
@@ -162,4 +166,5 @@ if __name__ == '__main__':
             EPOCHS=5, lr=10**-4, starting_poses=starting_poses, goals=goals, robot_init_pose=robot_init_pose, param=param)
         robot_init_pose = starting_poses[0, 0:2]
         goals = param.generate_new_goal(goals, starting_poses)
+        print ("?")
 
