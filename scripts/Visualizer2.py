@@ -35,7 +35,8 @@ class Visualizer2:
         ]
         pass
 
-    def publish(self, data):
+    def publish(self, data, text = None):
+
         # [ [x,y,x1,y1,x2,y2]
         #   [x,y,x1,y1]
         #   [x,y,x1,y1,x2,y2,x3,y3,...]
@@ -71,7 +72,7 @@ class Visualizer2:
             markerArray.markers.append(point_marker)
 
             # add some text
-            if self.with_text:
+            if self.with_text or text:
                 text_pose = Pose()
                 text_pose.position.x = agent[0]
                 text_pose.position.y = agent[1]
@@ -85,6 +86,9 @@ class Visualizer2:
                     pose=text_pose,
                     text=str(n+self.starting_id)
                 )
+                text_marker.text = str(n+self.starting_id)
+                if text:
+                    text_marker.text = text
                 text_marker.header.frame_id = self.frame_id
                 id += 1
                 markerArray.markers.append(text_marker)

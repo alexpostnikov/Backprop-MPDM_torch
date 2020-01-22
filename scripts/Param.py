@@ -25,8 +25,10 @@ class Param:
         self.betta = 0.71
 
         # social force params
-        self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
-        self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
+        self.socForceRobotPerson = {"k":2.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
+        self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
+        # self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
+        # self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
 
         self.a = 0.001
         self.b = 3
@@ -125,3 +127,41 @@ if __name__ == "__main__":
     t = m.sample()  # normally distributed with loc=0 and scale=1
     print (t)
     
+
+
+
+
+
+# 	//force_params_to_vector(double k, double lamb,double A,double B,double d);
+
+# 	switch( person_force_type_ )
+# 	{
+# 	case Collision_Prediction:
+# 		// Zanlungo collision prediction parameters
+# 		set_social_force_parameters_person_person( force_params_to_vector(1.52, 0.29,1.13,0.71,0.0) );
+# 		//Person-Robot Spherical parameters obtained using our optimization method
+# 		set_social_force_parameters_person_robot( force_params_to_vector(1.52, 0.29,1.13,0.71,0.0) );
+# 		//set_social_force_parameters_person_robot( force_params_to_vector(2.3, 0.59,2.66,0.79,0.4) );
+# 		//Obstacle spherical parameters obtained using our optimization method
+# 		set_social_force_parameters_obstacle( force_params_to_vector(2.3, 1.0,10.0,0.1,0.2) );
+# 		break;
+# 	case Elliptical:
+# 		//Default Zanlungo Elliptical parameters
+# 		set_social_force_parameters_person_person( force_params_to_vector(1.19, 0.08,1.33,0.34,1.78) );
+# 		//Person-Robot Spherical parameters obtained using our optimization method
+# 		set_social_force_parameters_person_robot( force_params_to_vector(2.3, 0.59,2.66,0.79,0.4) );
+# 		//Obstacle spherical parameters obtained using our optimization method
+# 		set_social_force_parameters_obstacle( force_params_to_vector(2.3, 1.0,10.0,0.1,0.2) );
+# 		break;
+# 	case Spherical:
+# 		//Default Zanlungo Spherical parameters (2.3, 0.08,1.33,0.64,0.16)
+# 		set_social_force_parameters_person_person( force_params_to_vector(4.9, 1.0,10.0,0.64,0.16) );//B=0.34, changed to 0.64
+# 		//Person-Robot Spherical parameters obtained using our optimization method
+# 		set_social_force_parameters_person_robot( force_params_to_vector(2.3, 0.59,2.66,0.79,0.4) );
+# 		//Obstacle spherical parameters obtained using our optimization method
+# 		set_social_force_parameters_obstacle( force_params_to_vector(2.3, 1.0,10.0,0.1,0.2) );
+# 		break;
+# 	}
+
+
+# }
