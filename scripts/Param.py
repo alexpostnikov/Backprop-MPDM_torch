@@ -7,12 +7,12 @@ class Param:
         
         self.num_ped = 5
         self.optim_epochs = 5
-        self.number_of_layers = 10
+        self.number_of_layers = 20
         self.do_visualization = 1
         self.do_logging = 0
 
         self.area_size = 10
-        self.pedestrians_speed = 2.0
+        self.pedestrians_speed = 1.0
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
         self.look_ahead_seconds = 4
 
@@ -98,7 +98,7 @@ class Param:
     def init_calcs(self):
         self.loop_sleep = 1/self.loop_rate
         self.goal_mean = self.area_size*torch.rand((self.num_ped,2))
-        self.goal_std = 1 * torch.rand((self.num_ped,2))
+        self.goal_std = 20 * torch.rand((self.num_ped,2))
         self.goal_distrib = torch.distributions.normal.Normal(self.goal_mean, self.goal_std)
 
         self.goal = self.goal_mean

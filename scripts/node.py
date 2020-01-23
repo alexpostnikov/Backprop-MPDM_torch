@@ -2,7 +2,7 @@
 import rospy
 import random
 
-from Visualizer2 import Visualizer2, Goal_sub 
+from Visualizer2 import Visualizer2, Rviz_sub 
 import numpy as np
 
 import torch
@@ -76,7 +76,8 @@ if __name__ == '__main__':
         modules.append(Linear())
 
     manual_goal = [None, None]
-    goal_sub = Goal_sub(manual_goal)
+    manual_pose = [None, None]
+    goal_sub = Rviz_sub(manual_goal, manual_pose)
     
     sequential = nn.Sequential(*modules)
 
@@ -138,6 +139,12 @@ if __name__ == '__main__':
                 param.goal[0,0] = manual_goal[0]
                 param.goal[0,1] = manual_goal[1]
                 manual_goal[0] = None
+            
+            if manual_pose[0] is not None:
+                param.input_state[0,0] = manual_pose[0]
+                param.input_state[0,1] = manual_pose[1]
+                manual_pose[0] = None
+                
                 
             
             goals.requires_grad_(True)

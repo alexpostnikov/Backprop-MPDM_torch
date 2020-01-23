@@ -15,7 +15,7 @@ import numpy as np
 
 import logging
 
-lr = 10**-3
+lr = 10**-1
 # torch.manual_seed(5)
 
 def come_to_me(origin, point,koef):
@@ -44,7 +44,8 @@ def rotate(origin, point, angle):
 def get_poses_probability(agents_pose, agents_pose_distrib, index_X=0 ,index_Y=1) :
 
     probability = torch.exp(agents_pose_distrib.log_prob(agents_pose))* torch.sqrt(2 * math.pi * agents_pose_distrib.stddev**2)
-    probability_ = (probability[:,index_X] * probability[:,index_Y]).requires_grad_(True)
+    probability_ = (probability[:,index_X] * probability[:,index_Y])
+    probability_ = probability_.view(-1,1).requires_grad_(True)
     return probability_
 
 class Linear(nn.Module):
@@ -112,8 +113,10 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
 
         #### CALC GRAD ####         
         # prob_cost  = probability_matrix[1:-1,:]
-        
+        # print (cost)
         prob_cost  = cost * (probability_matrix) * (goal_prob) * vel_prob + 1000
+        # print (prob_cost)
+        # prob_cost = prob_cost / param.number_of_layers
         prob_cost.sum().backward()
         gradient = inner_data.grad
         gradient[0,:] *= 0
@@ -121,7 +124,7 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
         if gradient is not None:
             with torch.no_grad():
 
-                delta_pose = lr * gradient[1:,0:2]
+                delta_pose =  lr * gradient[1:,0:2]
                 delta_vel = lr * gradient[1:,2:4]
                 delta_pose = torch.clamp(delta_pose,max=0.01,min=-0.01)
                 delta_vel  = torch.clamp(delta_vel,max=0.02,min=-0.02)
@@ -129,7 +132,7 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
                 starting_poses[1:,2:4] = starting_poses[1:,2:4] + delta_vel
                 goals.grad[0,:] = goals.grad[0,:] * 0
                 
-                goals = (goals + torch.clamp(lr* 1 * goals.grad, max=0.2, min=-0.2))#.requires_grad_(True)
+                goals = (goals + torch.clamp(lr * goals.grad, max=0.2, min=-0.2))#.requires_grad_(True)
 
         goals.requires_grad_(True)
  
