@@ -2,12 +2,29 @@ import rospy
 import time
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import Point, Pose, Vector3
+from geometry_msgs.msg import Point, Pose, Vector3, PointStamped, PoseStamped
 
+
+class Goal_sub:
+    def __init__(self, goal, topic_PoseStamped='/move_base_simple/goal', topic_PointStamped="/clicked_point"):
+        self.sub_PoseStamped = rospy.Subscriber(
+            topic_PoseStamped, PoseStamped, self.callback, goal, 1)
+        self.sub_PointStamped = rospy.Subscriber(
+            topic_PointStamped, PointStamped, self.callback, goal, 1)
+
+    def callback(self, msg, goal):
+        if 'geometry_msgs/PoseStamped' in msg._type:
+            goal[0] = msg.pose.position.x
+            goal[1] = msg.pose.position.y
+        if 'geometry_msgs/PointStamped' in msg._type:
+            goal[0] = msg.point.x
+            goal[1] = msg.point.y
+        print("got new goal: ",goal)
+        
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text = True, starting_id = 0):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
         self.with_text = with_text
@@ -35,7 +52,7 @@ class Visualizer2:
         ]
         pass
 
-    def publish(self, data, text = None):
+    def publish(self, data, text=None):
 
         # [ [x,y,x1,y1,x2,y2]
         #   [x,y,x1,y1]
@@ -44,7 +61,7 @@ class Visualizer2:
         # x,y - coord of point
         # xn,yn - n forces
         markerArray = MarkerArray()
-        
+
         id = 0
 
         # first_point = True
