@@ -154,12 +154,10 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose, policy=None):
     norm = -torch.norm(delta, dim = 1)/b
     B = torch.exp(norm)
     # Overall Cost
-    B = (-a*PG+1*B) #*k_dist[n]
-    # if policy != None:
-    #     print(policy+ " PG ",PG)
-    #     print("B  ",B)
-
-    return B + 1000
+    B = (-a*PG+1*B) 
+    
+        
+    return B# + 1000
 
 
 def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):

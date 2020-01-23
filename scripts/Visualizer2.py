@@ -20,7 +20,7 @@ class Goal_sub:
             goal[0] = msg.point.x
             goal[1] = msg.point.y
         print("got new goal: ",goal)
-        
+
 
 class Visualizer2:
 
@@ -35,7 +35,7 @@ class Visualizer2:
 
         self.point_color = ColorRGBA(1, 1, 1, 1)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
-        self.first_arrow_scale = Vector3(0.08/10, 0.2/10, 0.2/10)
+        self.first_arrow_scale = Vector3(0.08/10., 0.2/10., 0.2/10.)
         self.point_colors = [
             ColorRGBA(1, 1, 1, 1),    # 0 - white
             ColorRGBA(0, 1, 0, 1),    # 1 - green

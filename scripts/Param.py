@@ -5,33 +5,33 @@ class Param:
         # ros
         self.loop_rate = 30.
         
-        self.num_ped = 3
+        self.num_ped = 5
         self.optim_epochs = 5
-        self.number_of_layers = 5
+        self.number_of_layers = 10
         self.do_visualization = 1
         self.do_logging = 0
 
-        self.area_size = 5
-        self.pedestrians_speed = 1.0
+        self.area_size = 10
+        self.pedestrians_speed = 2.0
         self.robot_init_pose = torch.tensor(([1.5,2.0]))
         self.look_ahead_seconds = 4
 
         # mpdm params
         self.k = 2.3
-        self.DT = 0.4
+        self.DT = 0.2
         self.alpha = 10.66
         
         self.ped_mass = 60
         self.betta = 0.71
 
         # social force params
-        self.socForceRobotPerson = {"k":2.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
-        self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
+        self.socForceRobotPerson = {"k":2.3, "lambda":0.59, "A":3.66, "B":0.79,"d":0.65}
+        self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":12., "B":0.64,"d":0.26}
         # self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
         # self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
 
-        self.a = 0.01
-        self.b = 5 # 
+        self.a = 0.015
+        self.b = 40 # 
         self.e = 0.001 # min speed fo blame
         self.robot_speed = 1.0
 
@@ -98,17 +98,19 @@ class Param:
     def init_calcs(self):
         self.loop_sleep = 1/self.loop_rate
         self.goal_mean = self.area_size*torch.rand((self.num_ped,2))
-        self.goal_std = 20.0 * torch.rand((self.num_ped,2))
+        self.goal_std = 1 * torch.rand((self.num_ped,2))
         self.goal_distrib = torch.distributions.normal.Normal(self.goal_mean, self.goal_std)
 
         self.goal = self.goal_mean
         self.goal = self.goal.view(-1, 2)
-        
+
         self.input_state_mean = self.area_size*torch.rand((self.num_ped,4))
         self.input_state_mean[:,2:4] = self.input_state_mean[:,2:4]/ self.area_size
-        
-        self.input_state_std = 1.0 * torch.rand((self.num_ped,4))
+
+        self.input_state_std = 1 * torch.rand((self.num_ped,4))
+        self.input_state_std[:,2:4] = 1.0 * torch.rand((self.num_ped,2))
         self.input_distrib = torch.distributions.normal.Normal(self.input_state_mean, self.input_state_std)
+
 
         #self.input_state = self.input_distrib.sample()
         self.input_state = self.input_state_mean

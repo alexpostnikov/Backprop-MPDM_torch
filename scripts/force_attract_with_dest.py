@@ -10,7 +10,7 @@ def force_goal(input_state, goal, pedestrians_speed, robot_speed, k):
 	F_attr = k * (v_desired_x_y - input_state[:,2:4])
 	return F_attr
 
-def pose_propagation(force, state, DT, pedestrians_speed):
+def pose_propagation(force, state, DT, pedestrians_speed, robot_speed):
 
 	vx_vy_uncl = state[:,2:4] + (force*DT)
 	dx_dy = state[:,2:4]*DT + (force*(DT**2))*0.5
@@ -18,8 +18,10 @@ def pose_propagation(force, state, DT, pedestrians_speed):
 
 	# //apply constrains:
 	pose_prop_v_unclamped = vx_vy_uncl.norm(dim=1) #torch.sqrt(vx_vy[:,0:1]**2 + vx_vy[:,1:2]**2)
-	pose_prop_v = torch.clamp(pose_prop_v_unclamped, max=pedestrians_speed)
-	vx_vy = torch.clamp(vx_vy_uncl, max=pedestrians_speed)
+	pose_prop_v = torch.clamp(pose_prop_v_unclamped,min=-pedestrians_speed, max=pedestrians_speed)
+	pose_prop_v[0] = torch.clamp(pose_prop_v_unclamped[0], min=-robot_speed, max=robot_speed)
+	vx_vy = torch.clamp(vx_vy_uncl, min=-pedestrians_speed, max=pedestrians_speed)
+	vx_vy[0,:] = torch.clamp(vx_vy_uncl[0,:], min=-robot_speed, max=robot_speed)
 	
 	dr = dx_dy.norm(dim=1)#torch.sqrt(dx_dy[:,0:1]**2 + dx_dy[:,1:2]**2)
 	mask = (pose_prop_v * DT < dr) #* torch.ones(state.shape[0])
