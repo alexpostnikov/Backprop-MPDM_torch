@@ -18,6 +18,14 @@ import logging
 lr = 10**-3
 # torch.manual_seed(2)
 
+def come_to_me(origin, point,koef):
+    ox, oy = origin
+    px, py = point
+
+    qx = px+(ox-px)*koef
+    qy = py+(oy-py)*koef
+    return qx, qy
+
 
 
 def rotate(origin, point, angle):
@@ -46,13 +54,15 @@ class Linear(nn.Module):
 
     def forward(self, input):
 
-        input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
+        # input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
+        input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
         state = 1 * input_state
         rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
         # print("rf, af",[rf, af])
         F = rf + af
         out = pose_propagation(F, state, param.DT, param.pedestrians_speed)
-        temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out)
+        # temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out)
+        temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out, policy)
         if torch.isnan(temp).sum() > 0:
             pass
         if (temp < 0).sum() > 0:
@@ -61,11 +71,13 @@ class Linear(nn.Module):
         new_cost = cost + ( temp.view(-1,1))
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer,state.clone()))
         
-        return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose) 
+        # return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose) 
+        return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy) 
 
 
 
-def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer):
+# def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer):
+def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer, policy):
     for epoch_numb in range(0,epochs):
         if rospy.is_shutdown():
                 break
@@ -79,7 +91,9 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
 
         probability_matrix = get_poses_probability(inner_data, param.input_distrib)
         goal_prob = get_poses_probability(goals, param.goal_distrib)
-        _, cost, stacked_trajectories_for_visualizer, _,_ ,_ = model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose))
+        goal_prob[0] = 1.
+        # _, cost, stacked_trajectories_for_visualizer, _,_ ,_ = model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose))
+        _, cost, stacked_trajectories_for_visualizer, _,_ ,_ ,_= model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy))
         # print (goals)
         #### VISUALIZE ####
         if param.do_visualization:

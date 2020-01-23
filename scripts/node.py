@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from forward import calc_forces, pose_propagation, calc_cost_function
 from Param import Param
-from optimization import  get_poses_probability, Linear, optimize, lr, rotate
+from optimization import  get_poses_probability, Linear, optimize, lr, rotate, come_to_me
 # from optimisation import Linear
 import torch.nn as nn
 import time
@@ -22,6 +22,7 @@ def apply_policy(policy, state, goals, robot_speed):
         # return state, goals.clone(), robot_speed
     if policy == "right":
         Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], -math.pi/4.)
+        Gx, Gy = come_to_me([starting_poses[0,0].data, starting_poses[0,1].data],[Gx, Gy ],0.5)
         # with torch.no_grad():
         goals[0,0:2] =  torch.tensor(([Gx, Gy ]))
         robot_speed = 1.0
@@ -30,6 +31,7 @@ def apply_policy(policy, state, goals, robot_speed):
         # return state, goals, robot_speed
     if policy == "left":
         Gx, Gy = rotate([starting_poses[0,0].data, starting_poses[0,1].data], [goals[0,0].data, goals[0,1].data ], math.pi/4.)
+        Gx, Gy = come_to_me([starting_poses[0,0].data, starting_poses[0,1].data],[Gx, Gy ],0.5)
         # with torch.no_grad():
         goals[0,0:2] =  torch.tensor(([Gx, Gy ]))
         robot_speed = 1.0
@@ -103,7 +105,7 @@ if __name__ == '__main__':
                 goals_in_policy ,lr,ped_goals_visualizer, 
                 initial_pedestrians_visualizer, 
                 pedestrians_visualizer, robot_visualizer, 
-                learning_vis, initial_ped_goals_visualizer)
+                learning_vis, initial_ped_goals_visualizer, policy)
                 
             results.append(cost)
         

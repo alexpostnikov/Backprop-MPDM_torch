@@ -141,36 +141,24 @@ def calc_forces(state, goals, pedestrians_speed, robot_speed, k, alpha, ped_radi
 #     return rep_force, attr_force
 
 
-def calc_cost_function(a, b, e, goal, init_pose, agents_pose):
-    # agents_pose.retain_grad()
-    # costs = torch.zeros((len(agents_pose), 2), requires_grad=True)
+def calc_cost_function(a, b, e, goal, init_pose, agents_pose, policy=None):
     robot_pose = agents_pose[0, 0:2].clone()
     robot_speed = agents_pose[0, 2:4].clone()
-    # costs.retain_grad()
     PG = (robot_pose - init_pose).dot((-init_pose +
-                                      goal[0])/torch.norm(-init_pose+goal[0]))  # .requires_grad_(False)
-
-    # PG.retain_grad()
+                                      goal[0])/torch.norm(-init_pose+goal[0]))  
     # Blame
-
     B = torch.zeros(len(agents_pose), requires_grad=False)
-
-    if torch.norm(robot_speed) > e:
-        agents_speed = agents_pose[:,0:2]
-        delta =  agents_speed - robot_pose
-        norm = -torch.norm(delta, dim = 1)/b
-        B = torch.exp(norm)
-        # for n in range(1, len(agents_pose)):
-        #     # TODO: go into matrix math
-        #     B[n] = torch.exp(-torch.norm (agents_pose[n, 0:2]-robot_pose) /b )
-
+    # if torch.norm(robot_speed) > e:
+    agents_speed = agents_pose[:,0:2]
+    delta =  agents_speed - robot_pose
+    norm = -torch.norm(delta, dim = 1)/b
+    B = torch.exp(norm)
     # Overall Cost
-    # for n in range(len(B)):
-    #     # costs[n] = -a*PG+B[n]
-    #     B[n] = (-a*PG+1000*B[n]) #*k_dist[n]
     B = (-a*PG+1*B) #*k_dist[n]
-    # print (B)
-    # exit()
+    # if policy != None:
+    #     print(policy+ " PG ",PG)
+    #     print("B  ",B)
+
     return B + 1000
 
 
@@ -264,81 +252,3 @@ def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, veloci
     # print ("force after: ", force)
     # print ()
     return force
-
-
-if __name__ == "__main__":
-
-    torch.autograd.set_detect_anomaly(True)
-    na = 2
-    rand_data = torch.rand((na, 4))
-    # rand_data[:,2:4] *= 0
-    data = rand_data
-
-    data.requires_grad_(True)
-    goals = torch.rand((na, 2), requires_grad=False)
-    cost = torch.zeros(na, 2)
-
-    # forces = calc_forces(data, goals)
-    # data_ = pose_propagation(forces,data)
-    # cost+=calc_cost_function(agents_pose=data_[:,0:2])
-    # print (cost)
-    # print ("forces ", forces)
-    # cost.backward(torch.ones((cost.shape)))
-
-    # print (data.grad)#[:,0:2].grad)
-    # exit()
-
-    x = []
-    y = []
-    z = []
-    x2 = []
-    y2 = []
-    x3 = []
-    y3 = []
-    x4 = []
-    y4 = []
-    t = 0
-    print("init state ", data)
-    for i in range(0, 1):
-        forces = calc_forces(data, goals)
-
-        data = pose_propagation(forces, data)
-        cost += calc_cost_function(agents_pose=data[:, 0:2])
-
-        x.append(data.data[0, 0].item())
-        y.append(data.data[0, 1].item())
-        x2.append(data.data[1, 0].item())
-        y2.append(data.data[1, 1].item())
-        x3.append(data.data[2, 0].item())
-        y3.append(data.data[2, 1].item())
-        x4.append(data.data[3, 0].item())
-        y4.append(data.data[3, 1].item())
-        z.append(t)
-        t += DT
-        res = is_goal_achieved(data, goals)
-        if any(res) == True:
-            goals = generate_new_goal(goals, res, data)
-
-    # forces.backward(torch.ones((forces.shape)))
-    # print ("final state: ", data)
-    # print ("goals ", goals)
-    # print ("final deltapose: ", data[:,0:2]- goals)
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    # fig, ax = plt.subplots()
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-
-    ax.plot(x,  y,   z, 'ro', linewidth=1)
-    ax.plot(x2, y2, z, 'ro', color='skyblue')
-    ax.plot(x3, y3, z, 'ro', color='olive')
-    ax.plot(x4, y4, z, 'ro', color='yellow')
-    ax.set(zlabel='time (s)', ylabel='y', xlabel="x",
-           title='traj of persons')
-    ax.grid()
-
-    plt.show()

@@ -30,7 +30,7 @@ class Param:
         # self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
         # self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
 
-        self.a = 0.02
+        self.a = 0.01
         self.b = 5 # 
         self.e = 0.001 # min speed fo blame
         self.robot_speed = 1.0
