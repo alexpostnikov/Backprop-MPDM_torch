@@ -5,7 +5,7 @@ print (sys.version)
 import torch
 from force_attract_with_dest import force_goal, pose_propagation, is_goal_achieved, generate_new_goal
 from forward import calc_cost_function, calc_forces
-from Visualizer2 import Visualizer2, Goal_sub
+from Visualizer2 import Visualizer2, Rviz_sub
 from Param import Param
 import rospy
 import time
@@ -50,9 +50,11 @@ class Linear(nn.Module):
 if __name__ == '__main__':
     rospy.init_node("vis")
     # goal = [1.,1.]
-    # Goal_sub(goal)
+    # initialpose = [1.,1.]
+    # Goal_sub(goal,initialpose)
     # while not rospy.is_shutdown():
-    #     # print(goal)
+    #     print("initialpose ",initialpose)
+    #     print("goal ",goal)
     #     time.sleep(0.1)
 
     pedestrians_visualizer = Visualizer2("peds")
