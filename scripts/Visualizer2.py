@@ -29,9 +29,6 @@ class Rviz_sub:
         if 'geometry_msgs/PoseWithCovarianceStamped' in msg._type:
             initialpose[0] = msg.pose.pose.position.x
             initialpose[1] = msg.pose.pose.position.y
-        
-        
-
 
 class Visualizer2:
 
@@ -95,6 +92,7 @@ class Visualizer2:
             if len(agent) < 3:
                 point_marker.type = Marker.CUBE
 
+            point_marker.mesh_resource = "package://mpdm/mesh/robot.stl"
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)
