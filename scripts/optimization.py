@@ -15,8 +15,8 @@ import numpy as np
 
 import logging
 
-lr = 10**-1
-# torch.manual_seed(5)
+lr = 10
+torch.manual_seed(6)
 
 def come_to_me(origin, point,koef):
     ox, oy = origin
@@ -44,7 +44,7 @@ def rotate(origin, point, angle):
 def get_poses_probability(agents_pose, agents_pose_distrib, index_X=0 ,index_Y=1) :
 
     probability = torch.exp(agents_pose_distrib.log_prob(agents_pose))* torch.sqrt(2 * math.pi * agents_pose_distrib.stddev**2)
-    probability_ = (probability[:,index_X] * probability[:,index_Y])
+    probability_ = 0.5*(probability[:,index_X] + probability[:,index_Y])
     probability_ = probability_.view(-1,1).requires_grad_(True)
     return probability_
 
@@ -69,11 +69,11 @@ class Linear(nn.Module):
         out = pose_propagation(F, state, param.DT, param.pedestrians_speed, param.robot_speed)
         if torch.isnan(out).sum()> 0:
             print ("OUT PROBLEM")
-        temp = calc_cost_function(param.a, param.b, param.e, goals, robot_init_pose, out, policy)
+        temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out, policy)
         if torch.isnan(temp).sum()> 0:
             print ("temp PROBLEM")
-        if (temp < 0).sum() > 0:
-            print ("WARNING, NEGATIVE COSTS")
+        # if (temp < 0).sum() > 0:
+        #     print ("WARNING, NEGATIVE COSTS")
         
         new_cost = cost + ( temp.view(-1,1))
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer, state.clone()))
@@ -87,6 +87,9 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
     for epoch_numb in range(0,epochs):
         if rospy.is_shutdown():
                 break
+
+
+        max_cost = -math.inf
         start = time.time()    
         stacked_trajectories_for_visualizer = starting_poses.clone()
         inner_data = starting_poses.clone().detach()
@@ -101,6 +104,7 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
         goal_prob[0] = 1.
         # _, cost, stacked_trajectories_for_visualizer, _,_ ,_ = model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose))
         _, cost, stacked_trajectories_for_visualizer, _,_ ,_ ,_= model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy))
+        
         # print (goals)
         #### VISUALIZE ####
         if param.do_visualization:
@@ -108,16 +112,19 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
             # initial_pedestrians_visualizer.publish(observed_state)
             pedestrians_visualizer.publish(starting_poses[1:])
             robot_visualizer.publish(starting_poses[0:1])
-            learning_vis.publish(stacked_trajectories_for_visualizer)
+            # learning_vis.publish(stacked_trajectories_for_visualizer)
             initial_ped_goals_visualizer.publish(param.goal)
 
         #### CALC GRAD ####         
         # prob_cost  = probability_matrix[1:-1,:]
         # print (cost)
-        prob_cost  = cost * (probability_matrix) * (goal_prob) * vel_prob + 1000
+        prob_cost  = cost * (probability_matrix) * (goal_prob) * vel_prob
         # print (prob_cost)
         # prob_cost = prob_cost / param.number_of_layers
         prob_cost.sum().backward()
+        total_cost = prob_cost.sum().item()
+        if total_cost > max_cost:
+            max_cost = total_cost
         gradient = inner_data.grad
         gradient[0,:] *= 0
         
@@ -125,14 +132,14 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
             with torch.no_grad():
 
                 delta_pose =  lr * gradient[1:,0:2]
-                delta_vel = lr * gradient[1:,2:4]
+                delta_vel = 100*lr * gradient[1:,2:4]
                 delta_pose = torch.clamp(delta_pose,max=0.01,min=-0.01)
                 delta_vel  = torch.clamp(delta_vel,max=0.02,min=-0.02)
                 starting_poses[1:,0:2] = starting_poses[1:,0:2] + delta_pose
                 starting_poses[1:,2:4] = starting_poses[1:,2:4] + delta_vel
                 goals.grad[0,:] = goals.grad[0,:] * 0
                 
-                goals = (goals + torch.clamp(lr * goals.grad, max=0.2, min=-0.2))#.requires_grad_(True)
+                goals = (goals + torch.clamp(lr *10* goals.grad, max=0.2, min=-0.2))#.requires_grad_(True)
 
         goals.requires_grad_(True)
  
@@ -144,13 +151,12 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
         if starting_poses.grad is not None:
             starting_poses.grad.data.zero_()
         
-        prob_cost = prob_cost - 1000
         if (epoch_numb % 1 == 0):
             if do_print:
                 print ('       ---iter # ',epoch_numb, "      cost: {:.1f}".format(prob_cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
             if param.do_logging:
                 logger.debug('       ---iter # '+ str(epoch_numb) + "      cost: {:.1f}".format(prob_cost.sum().item()) +'      iter time: '+ "{:.3f}".format(time.time()-start))
-    return prob_cost.sum().item()
+    return max_cost
 
 
 

@@ -81,7 +81,7 @@ if __name__ == '__main__':
     
     sequential = nn.Sequential(*modules)
 
-    for i in range (10000):
+    for i in range (10):
         if rospy.is_shutdown():
                 break
         observed_state = param.input_state.clone().detach()
@@ -99,8 +99,8 @@ if __name__ == '__main__':
         # #### OPTIMIZATION ####
         global_start_time = time.time()
 
-        policies = ["stop", "go-solo"]#, "slow"]#, "fast", , "left", "right"]
-        # policies = ["go-solo"]
+        policies = ["stop", "go-solo", "left", "right"]#, "slow"]#, "fast", , "left", "right"]
+        # policies = ["stop", "go-solo"]
         results = []
         for policy in policies:
             starting_poses = observed_state.clone()
@@ -143,8 +143,12 @@ if __name__ == '__main__':
             if manual_pose[0] is not None:
                 param.input_state[0,0] = manual_pose[0]
                 param.input_state[0,1] = manual_pose[1]
+
+                # param.robot_init_pose[0] = manual_pose[0]
+                # param.robot_init_pose[1] = manual_pose[1]
                 manual_pose[0] = None
-                
+            
+            param.robot_init_pose = param.input_state[0,0:2]
                 
             
             goals.requires_grad_(True)
