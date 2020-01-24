@@ -56,6 +56,10 @@ if __name__ == '__main__':
       # torch.autograd.set_detect_anomaly(True)
     param = Param()    
     rospy.init_node("mpdm")
+    if torch.gpu.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("CPU")
     ##### logging init   #####
     if param.do_logging:        
         logger = setup_logger(logger_name = "mpdm node")
@@ -80,7 +84,7 @@ if __name__ == '__main__':
     goal_sub = Rviz_sub(manual_goal, manual_pose)
     
     sequential = nn.Sequential(*modules)
-
+    sequential = sequential.to(device)
     for i in range (10):
         if rospy.is_shutdown():
                 break

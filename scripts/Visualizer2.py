@@ -37,7 +37,7 @@ class Visualizer2:
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
         self.with_text = with_text
-        if mesh_scale not None:
+        if mesh_scale is not None:
             size[0] *= mesh_scale
             size[1] *= mesh_scale
             size[2] *= mesh_scale
@@ -97,7 +97,7 @@ class Visualizer2:
             )
             if len(agent) < 3:
                 point_marker.type = Marker.CUBE
-            if mesh_resource not None:
+            if mesh_resource is not None:
                 point_marker.type = Marker.MESH_RESOURCE
                 point_marker.mesh_resource = "package://mpdm/mesh/"+mesh_resource  # "robot2.stl"
             point_marker.header.frame_id = self.frame_id
