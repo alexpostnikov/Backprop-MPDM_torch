@@ -4,6 +4,8 @@ import numpy as np
 import math
 # param.ped_radius, param.ped_mass, param.betta
 
+ppp = None
+
 class Repulsive_forces():
     def __init__(self):
         self.num_ped = None
@@ -131,33 +133,35 @@ rep_f = Repulsive_forces()
 def calc_forces(state, goals, pedestrians_speed, robot_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
 
     rep_force = rep_f.calc_rep_forces(state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
+    # rep_force[0] = 0*rep_force[0]
     attr_force = force_goal(state, goals, pedestrians_speed,robot_speed, k)
     return rep_force, attr_force
 
-# def calc_forces_(state, goals, pedestrians_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
-#     rep_force = calc_rep_forces(
-#         state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
-#     attr_force = force_goal(state, goals, pedestrians_speed, k)
-#     return rep_force, attr_force
-
 
 def calc_cost_function(a, b, e, goal, init_pose, agents_pose, policy=None):
+    global ppp
     robot_pose = agents_pose[0, 0:2].clone()
     robot_speed = agents_pose[0, 2:4].clone()
     PG = (robot_pose - init_pose).dot((-init_pose +
                                       goal[0])/torch.norm(-init_pose+goal[0]))  
     # Blame
+    # PG = torch.clamp(PG, max = 0.5) 
     B = torch.zeros(len(agents_pose), requires_grad=False)
     # if torch.norm(robot_speed) > e:
     agents_speed = agents_pose[:,0:2]
     delta =  agents_speed - robot_pose
     norm = -torch.norm(delta, dim = 1)/b
-    B = torch.exp(norm)
+    B = torch.exp(norm)#+0.5
     # Overall Cost
+    # PG = PG/len(agents_pose)
     B = (-a*PG+1*B) 
-    
-        
-    return B# + 1000
+    B = B/len(agents_pose)
+    torch.clamp(B, min = 0.1)
+    # if ppp != policy:
+    #     print (goal, policy)
+    #     ppp = policy
+    # print (PG, policy)
+    return B
 
 
 def calc_rep_forces(state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):
