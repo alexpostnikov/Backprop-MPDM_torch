@@ -54,12 +54,13 @@ def apply_policy(policy, state, goals, robot_speed):
 
 if __name__ == '__main__':
       # torch.autograd.set_detect_anomaly(True)
-    param = Param()    
     rospy.init_node("mpdm")
-    if torch.gpu.is_available():
+    if torch.cuda.is_available():
         device = torch.device("cuda:0")
     else:
-        device = torch.device("CPU")
+        device = torch.device("cpu")
+    device = torch.device("cpu")
+    param = Param(device)    
     ##### logging init   #####
     if param.do_logging:        
         logger = setup_logger(logger_name = "mpdm node")
@@ -84,12 +85,14 @@ if __name__ == '__main__':
     goal_sub = Rviz_sub(manual_goal, manual_pose)
     
     sequential = nn.Sequential(*modules)
+    # gpu staff
     sequential = sequential.to(device)
+    # gpu staff
     for i in range (10):
         if rospy.is_shutdown():
                 break
         observed_state = param.input_state.clone().detach()
-
+        # observed_state = observed_state.to(device)
         cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
         robot_init_pose = observed_state[0,0:2]#param.robot_init_pose.requires_grad_(True) 
         goals = param.goal.clone().detach().requires_grad_(False)
@@ -100,6 +103,10 @@ if __name__ == '__main__':
             modules.append(Linear())
 
         sequential = nn.Sequential(*modules)
+        # gpu staff
+        sequential = sequential.to(device)
+        param.to_device(device)
+        # gpu staff
         # #### OPTIMIZATION ####
         global_start_time = time.time()
 
@@ -108,14 +115,23 @@ if __name__ == '__main__':
         results = []
         for policy in policies:
             starting_poses = observed_state.clone()
+            # gpu staff
+            starting_poses = starting_poses.to(device)
+            # gpu staff
+
             starting_poses, goals_in_policy, param.robot_speed = apply_policy(policy, starting_poses, goals.clone(), param.robot_speed)
             goals_in_policy.requires_grad_(True)
+            # gpu staff
+            goals_in_policy = goals_in_policy.to(device)
+            starting_poses = starting_poses.to(device)
+            # gpu staff
+
             cost = optimize(param.optim_epochs, sequential, starting_poses, 
                 param.robot_init_pose, param, 
                 goals_in_policy ,lr,ped_goals_visualizer, 
                 initial_pedestrians_visualizer, 
                 pedestrians_visualizer, robot_visualizer, 
-                learning_vis, initial_ped_goals_visualizer, policy)
+                learning_vis, initial_ped_goals_visualizer, policy, device = device)
                 
             results.append(cost)
         

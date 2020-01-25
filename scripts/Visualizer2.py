@@ -42,7 +42,7 @@ class Visualizer2:
             size[1] *= mesh_scale
             size[2] *= mesh_scale
         self.point_scale = Vector3(size[0], size[1], size[2])
-
+        self.mesh_resource = mesh_resource
         self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/4)
         self.text_color = ColorRGBA(0, 0, 0, 1)
         self.starting_id = starting_id
@@ -97,9 +97,9 @@ class Visualizer2:
             )
             if len(agent) < 3:
                 point_marker.type = Marker.CUBE
-            if mesh_resource is not None:
+            if self.mesh_resource is not None:
                 point_marker.type = Marker.MESH_RESOURCE
-                point_marker.mesh_resource = "package://mpdm/mesh/"+mesh_resource  # "robot2.stl"
+                point_marker.mesh_resource = "package://mpdm/mesh/"+self.mesh_resource  # "robot2.stl"
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)

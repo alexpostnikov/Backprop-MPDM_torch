@@ -1,7 +1,8 @@
 import torch
 
 class Param:
-    def __init__(self):
+    def __init__(self,device = None):
+        self.device = device
         # ros
         self.loop_rate = 30.
         
@@ -41,11 +42,21 @@ class Param:
 
         self.generateMatrices()
         
-        self.init_calcs()
+        self.init_calcs(device)
         self.robot_goal = self.goal[0,2:4]
+        self.to_device(device)
+
+    def to_device(self, device):
+        # TODO: check why that tensor got 700Mb in gpu memory
+        self.robot_init_pose = self.robot_init_pose.to(device)
+        # self.input_distrib = self.input_distrib.to(device)
+        # self.goal_distrib = self.goal_distrib.to(device)
+
 
     def update_scene(self, new_pose_mean, new_goal_mean):
         self.input_state_mean = new_pose_mean
+        if self.device is not None:
+            new_pose_mean = new_pose_mean.to(self.device)
         self.input_distrib = torch.distributions.normal.Normal(self.input_state_mean, self.input_state_std)
         self.input_state = self.input_state_mean
 
@@ -76,6 +87,13 @@ class Param:
         self.lamb[0,:] = self.socForceRobotPerson["lambda"]
         self.lamb[:,0] = self.socForceRobotPerson["lambda"]
 
+        if self.device is not None:
+            self.ped_radius = self.ped_radius.to(self.device)
+            self.k = self.k.to(self.device)
+            self.betta = self.betta.to(self.device)
+            self.alpha = self.alpha.to(self.device)
+            self.lamb = self.lamb.to(self.device)
+
 
     def generate_new_goal(self, goals, input_state):
         is_achived = self.is_goal_achieved(input_state, goals)
@@ -95,10 +113,16 @@ class Param:
         is_achieved = torch.sqrt(is_achieved[:,0]**2 + is_achieved[:,1]**2)
         return is_achieved<0.3
 
-    def init_calcs(self):
+    def init_calcs(self,device):
         self.loop_sleep = 1/self.loop_rate
         self.goal_mean = self.area_size*torch.rand((self.num_ped,2))
         self.goal_std = 10 * torch.rand((self.num_ped,2))
+        # gpu staff
+        if device is not None:
+            self.goal_mean = self.goal_mean.to(device)
+            self.goal_std = self.goal_std.to(device)
+        # gpu staff
+        
         self.goal_distrib = torch.distributions.normal.Normal(self.goal_mean, self.goal_std)
 
         self.goal = self.goal_mean
@@ -106,9 +130,15 @@ class Param:
 
         self.input_state_mean = self.area_size*torch.rand((self.num_ped,4))
         self.input_state_mean[:,2:4] = self.input_state_mean[:,2:4]/ self.area_size
+        
 
         self.input_state_std = 1.0 * torch.rand((self.num_ped,4))
         self.input_state_std[:,2:4] = 2.0 * torch.rand((self.num_ped,2))
+        # gpu staff
+        if device is not None:
+            self.input_state_mean = self.input_state_mean.to(device)
+            self.input_state_std = self.input_state_std.to(device)
+        # gpu staff
         self.input_distrib = torch.distributions.normal.Normal(self.input_state_mean, self.input_state_std)
 
 
@@ -118,7 +148,7 @@ class Param:
         self.input_state = self.input_state.view(-1, 4).requires_grad_(True)
 
         # self.goal[0,:] = self.robot_goal.clone().detach()
-        self.robot_init_pose = self.robot_init_pose.clone().detach().requires_grad_(True)
+        # self.robot_init_pose = self.robot_init_pose.clone().detach().requires_grad_(True)
         # self.robot_goal= torch.tensor(self.robot_goal,requires_grad=True)
 
 
