@@ -6,7 +6,7 @@ from geometry_msgs.msg import Point, Pose, Vector3, PointStamped, PoseStamped, P
 
 
 class Rviz_sub:
-    def __init__(self, goal=None,initialpose=None, topic_PoseStamped='/move_base_simple/goal', topic_PointStamped="/clicked_point", topic_PoseWithCovarianceStamped="/initialpose"):
+    def __init__(self, goal=None, initialpose=None, topic_PoseStamped='/move_base_simple/goal', topic_PointStamped="/clicked_point", topic_PoseWithCovarianceStamped="/initialpose"):
         if goal != None:
             self.sub_PoseStamped = rospy.Subscriber(
                 topic_PoseStamped, PoseStamped, self.callback_goal, goal, 1)
@@ -29,17 +29,20 @@ class Rviz_sub:
         if 'geometry_msgs/PoseWithCovarianceStamped' in msg._type:
             initialpose[0] = msg.pose.pose.position.x
             initialpose[1] = msg.pose.pose.position.y
-        
-        
 
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0, mesh_resource=None, mesh_scale=None):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
         self.with_text = with_text
+        if mesh_scale is not None:
+            size[0] *= mesh_scale
+            size[1] *= mesh_scale
+            size[2] *= mesh_scale
         self.point_scale = Vector3(size[0], size[1], size[2])
+        self.mesh_resource = mesh_resource
         self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/4)
         self.text_color = ColorRGBA(0, 0, 0, 1)
         self.starting_id = starting_id
@@ -94,7 +97,9 @@ class Visualizer2:
             )
             if len(agent) < 3:
                 point_marker.type = Marker.CUBE
-
+            if self.mesh_resource is not None:
+                point_marker.type = Marker.MESH_RESOURCE
+                point_marker.mesh_resource = "package://mpdm/mesh/"+self.mesh_resource  # "robot2.stl"
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)

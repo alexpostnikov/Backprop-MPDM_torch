@@ -15,7 +15,14 @@ class Repulsive_forces():
         self.indexes        = None
         self.uneven_indexes = None
         self.even_indexes   = None
-    
+        self.device = None
+        if torch.cuda.is_available():
+            self.device = torch.device("cuda:0")
+        else:
+            self.device = torch.device("cpu")
+        self.device = torch.device("cpu")
+        
+   
     def change_num_of_ped(self, new_num):
         self.num_ped = new_num
         self.aux1 = None
@@ -30,8 +37,13 @@ class Repulsive_forces():
     def generate_aux_matrices(self):
         if self.aux1 is None:
             self.aux1 = torch.tensor(([1., 0.], [0., 1.]))
+            if self.device is not None:
+                self.aux1 = self.aux1.to(self.device)
             for i in range(0, self.num_ped):
-                self.aux1 = torch.cat((self.aux1, torch.tensor(([1., 0.], [0., 1.]))), dim=1)
+                temp = torch.tensor(([1., 0.], [0., 1.]))
+                if self.device is not None:
+                    temp = temp.to(self.device)
+                self.aux1 = torch.cat((self.aux1, temp), dim=1)
             # self.aux1.requires_grad_(True)
             # self.aux1.retain_grad()
             '''
@@ -47,6 +59,8 @@ class Repulsive_forces():
             '''
         if self.auxullary is None:
             self.auxullary = torch.zeros(self.num_ped+1, (self.num_ped+1)*2)
+            if self.device is not None:
+                self.auxullary = self.auxullary.to(self.device)
             for i in range(self.num_ped+1):
                 self.auxullary[i, 2*i] = 1.
                 self.auxullary[i, 2*i+1] = 1.
@@ -60,6 +74,8 @@ class Repulsive_forces():
                 '''
         if self.aux is None:
             self.aux = self.auxullary.t()
+            if self.device is not None:
+                self.aux = self.aux.to(self.device)
             # self.aux.retain_grad()
         
         if self.indexes is None:
@@ -98,8 +114,11 @@ class Repulsive_forces():
         # dist_squared += 0.0000001
         dist = (dist_squared.matmul(self.aux))
         # aka distance
+        temp = torch.eye(dist.shape[0])
+        if self.device is not None:
+            temp = temp.to(self.device)
         dist = torch.sqrt(dist) + 10000000 * \
-            torch.eye(dist.shape[0])  # TODO: deal with 1/0,
+            temp  # TODO: deal with 1/0,
 
         # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
         # according to Headed Social Force Model
@@ -128,6 +147,8 @@ class Repulsive_forces():
 
 
 rep_f = Repulsive_forces()
+
+
 def calc_forces(state, goals, pedestrians_speed, robot_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
 
     rep_force = rep_f.calc_rep_forces(state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)

@@ -57,12 +57,11 @@ class Linear(nn.Module):
 
         # input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
         state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
-        # state = 1 * input_state
+        # state = 1 * input_state       
         rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
         F = rf + af
         out = pose_propagation(F, state.clone(), param.DT, param.pedestrians_speed, param.robot_speed)
         temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out, policy)
-        
         new_cost = cost + ( temp.view(-1,1))
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer, state.clone()))
         
@@ -71,7 +70,7 @@ class Linear(nn.Module):
 
 
 # def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer):
-def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer, policy= None, do_print = False):
+def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer, policy= None, do_print = False, device=None):
     for epoch_numb in range(0,epochs):
         if rospy.is_shutdown():
                 break
@@ -85,6 +84,11 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
 
         ### FORWARD PASS #### 
         cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
+
+        # gpu staff
+        cost = cost.to(device)
+        # gpu staff
+    
 
         probability_matrix = get_poses_probability(inner_data, param.input_distrib)
         goal_prob = get_poses_probability(goals, param.goal_distrib)
