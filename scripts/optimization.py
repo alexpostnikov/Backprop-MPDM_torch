@@ -16,7 +16,7 @@ import numpy as np
 import logging
 
 lr = 10
-torch.manual_seed(6)
+torch.manual_seed(7)
 
 def come_to_me(origin, point,koef):
     ox, oy = origin
@@ -56,28 +56,16 @@ class Linear(nn.Module):
     def forward(self, input):
 
         # input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
-        input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
-        state = 1 * input_state
-        if torch.isnan(goals).sum()> 0:
-            print ("goals PROBLEM")
-        
+        state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
+        # state = 1 * input_state
         rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
-        # print("rf, af",[rf, af])
         F = rf + af
-        if torch.isnan(F).sum()> 0:
-            print ("F PROBLEM")
-        out = pose_propagation(F, state, param.DT, param.pedestrians_speed, param.robot_speed)
-        if torch.isnan(out).sum()> 0:
-            print ("OUT PROBLEM")
+        out = pose_propagation(F, state.clone(), param.DT, param.pedestrians_speed, param.robot_speed)
         temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out, policy)
-        if torch.isnan(temp).sum()> 0:
-            print ("temp PROBLEM")
-        # if (temp < 0).sum() > 0:
-        #     print ("WARNING, NEGATIVE COSTS")
         
         new_cost = cost + ( temp.view(-1,1))
         stacked_trajectories_for_visualizer = torch.cat((stacked_trajectories_for_visualizer, state.clone()))
-        # return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose) 
+        
         return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy) 
 
 
@@ -102,25 +90,22 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
         goal_prob = get_poses_probability(goals, param.goal_distrib)
         vel_prob = get_poses_probability(inner_data, param.input_distrib, index_X=2, index_Y=3)
         goal_prob[0] = 1.
-        # _, cost, stacked_trajectories_for_visualizer, _,_ ,_ = model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose))
         _, cost, stacked_trajectories_for_visualizer, _,_ ,_ ,_= model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy))
         
         # print (goals)
         #### VISUALIZE ####
-        if param.do_visualization:
+        if param.do_visualization and None not in [ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer]:
             ped_goals_visualizer.publish(goals)
             # initial_pedestrians_visualizer.publish(observed_state)
             pedestrians_visualizer.publish(starting_poses[1:])
             robot_visualizer.publish(starting_poses[0:1])
-            # learning_vis.publish(stacked_trajectories_for_visualizer)
+            learning_vis.publish(stacked_trajectories_for_visualizer)
             initial_ped_goals_visualizer.publish(param.goal)
 
         #### CALC GRAD ####         
-        # prob_cost  = probability_matrix[1:-1,:]
-        # print (cost)
+
         prob_cost  = cost * (probability_matrix) * (goal_prob) * vel_prob
-        # print (prob_cost)
-        # prob_cost = prob_cost / param.number_of_layers
+
         prob_cost.sum().backward()
         total_cost = prob_cost.sum().item()
         if total_cost > max_cost:
@@ -153,9 +138,9 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
         
         if (epoch_numb % 1 == 0):
             if do_print:
-                print ('       ---iter # ',epoch_numb, "      cost: {:.1f}".format(prob_cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
+                print ('       ---iter # ',epoch_numb, "      cost: {:.2f}".format(prob_cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
             if param.do_logging:
-                logger.debug('       ---iter # '+ str(epoch_numb) + "      cost: {:.1f}".format(prob_cost.sum().item()) +'      iter time: '+ "{:.3f}".format(time.time()-start))
+                logger.debug('       ---iter # '+ str(epoch_numb) + "      cost: {:.2f}".format(prob_cost.sum().item()) +'      iter time: '+ "{:.3f}".format(time.time()-start))
     return max_cost
 
 
@@ -194,6 +179,14 @@ if __name__ == '__main__':
         initial_ped_goals_visualizer = Visualizer2("goals/init_ped", size=[0.05, 0.05, 0.25], color=3, with_text = True)
         robot_visualizer = Visualizer2("robot", color=1)
         learning_vis = Visualizer2("peds/learning",size=[0.2,0.2,1.0],color=2, with_text = False)
+    
+    else :
+        pedestrians_visualizer = None
+        initial_pedestrians_visualizer = None
+        ped_goals_visualizer = None
+        initial_ped_goals_visualizer = None
+        robot_visualizer = None
+        learning_vis = None
 
 
 

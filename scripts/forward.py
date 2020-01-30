@@ -19,6 +19,7 @@ class Repulsive_forces():
     def change_num_of_ped(self, new_num):
         self.num_ped = new_num
         self.aux1 = None
+        self.aux2 = None
         self.auxullary = None
         self.aux = None
         self.indexes        = None
@@ -65,6 +66,9 @@ class Repulsive_forces():
             self.indexes = np.linspace(0., (self.num_ped+1)*2, ((self.num_ped+1)*2+1))
             self.uneven_indexes = self.indexes[1:-1:2]
             self.even_indexes = self.indexes[0:-1:2]
+        
+        if self.aux2 is None:
+            self.aux2 = self.aux1.clone().t()
 
 
     def calc_rep_forces(self, state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):
@@ -72,21 +76,21 @@ class Repulsive_forces():
             self.change_num_of_ped(state.shape[0]-1)
 
         state_concated = state.clone().matmul(self.aux1)
-        # state_concated.retain_grad()
+        # state_concated_t = torch.randn((5,10))
+        
         state_concated_t = state.reshape(1, -1)
         for i in range(0, state.shape[0]-1):
             state_concated_t = torch.cat([state_concated_t, state.reshape(1, -1)])
-            '''    state_concated_t tensor(
-            [[ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
-            [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
-            [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
-            [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.]]
-            '''
-        delta_pose = (-state_concated_t + state_concated)
-        delta_pose += 0.0000001
+        '''    state_concated_t tensor(
+        [[ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
+        [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
+        [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
+        [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.]]
+        '''
+        delta_pose = (-state_concated_t + state_concated) + 0.0000001
+
         
         dist_squared = ((delta_pose)**2)
-        # dist_squared.retain_grad()
         # used to calc delta_x**2 +delta_y**2 of each agent
         
         # sqrt(delta_x**2 +delta_y**2) -> distance
@@ -102,7 +106,6 @@ class Repulsive_forces():
         
         force_amplitude = A * torch.exp((ped_radius - dist) / betta)
         
-        # print ("delta_pose / (dist).matmul(auxullary) \n",delta_pose / (dist).matmul(auxullary))
         # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
 
         velocity_state_concated = velocity_state.clone().matmul(self.aux1)
@@ -113,19 +116,14 @@ class Repulsive_forces():
         dx = delta_pose[:,self.even_indexes]
         deltapose_atan = torch.atan2(-dy, -dx)
         phi = ((velocity_atan - deltapose_atan) + math.pi) % (2*math.pi) - math.pi
-        
-        
+
         anisotropy = param_lambda + (1 - param_lambda)*(1+torch.cos(phi))/2.
         anisotropy = anisotropy.matmul(self.auxullary)
         force = force_amplitude.matmul(
             self.auxullary)*(delta_pose / (dist).matmul(self.auxullary)) * anisotropy
-        # print ("force BBbefore: ", force)
+
         force = (force * ((self.auxullary - 1) * -1))
-        # print ("force before: ", force)
-        aux2 = self.aux1.clone().t()
-        force = force.matmul(aux2)
-        # print ("force after: ", force)
-        # print ()
+        force = force.matmul(self.aux2)
         return force
 
 
@@ -139,14 +137,14 @@ def calc_forces(state, goals, pedestrians_speed, robot_speed, k, alpha, ped_radi
 
 
 def calc_cost_function(a, b, e, goal, init_pose, agents_pose, policy=None):
-    global ppp
+
     robot_pose = agents_pose[0, 0:2].clone()
     robot_speed = agents_pose[0, 2:4].clone()
     PG = (robot_pose - init_pose).dot((-init_pose +
                                       goal[0])/torch.norm(-init_pose+goal[0]))  
     # Blame
     # PG = torch.clamp(PG, max = 0.5) 
-    B = torch.zeros(len(agents_pose), requires_grad=False)
+    B = torch.zeros(len(agents_pose),1, requires_grad=False)
     # if torch.norm(robot_speed) > e:
     agents_speed = agents_pose[:,0:2]
     delta =  agents_speed - robot_pose
@@ -156,7 +154,7 @@ def calc_cost_function(a, b, e, goal, init_pose, agents_pose, policy=None):
     # PG = PG/len(agents_pose)
     B = (-a*PG+1*B) 
     B = B/len(agents_pose)
-    torch.clamp(B, min = 0.1)
+    B = torch.clamp(B, min = 0.002)
     # if ppp != policy:
     #     print (goal, policy)
     #     ppp = policy
