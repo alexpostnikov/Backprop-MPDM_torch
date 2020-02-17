@@ -1,14 +1,14 @@
 import torch
 
 class Param:
-    def __init__(self,device = None):
+    def __init__(self,device = None, num_ped=5):
         self.device = device
         # ros
         self.loop_rate = 30.
         
         
-        self.num_ped = 5
-        self.optim_epochs = 5
+        self.num_ped = num_ped
+        self.optim_epochs = 1
         self.number_of_layers = 10
 
         # DISCTIB COEFFICIENTS

@@ -121,7 +121,7 @@ if __name__ == '__main__':
         
         
         #### CALC GRAD ####         
-        # prob_cost  = probability_matrix[1:-1,:]
+
         prob_cost  = cost * torch.sqrt(probability_matrix) * torch.sqrt(goal_prob)
         print (goal_prob[4])
         prob_cost.sum().backward()
@@ -136,18 +136,8 @@ if __name__ == '__main__':
                 delta_pose = torch.clamp(delta_pose,max=0.01,min=-0.01)
                 delta_vel = torch.clamp(delta_vel,max=0.02,min=-0.02)
                 starting_poses[1:,0:2] = starting_poses[1:,0:2] + delta_pose
-                # starting_poses[1:,2:4] = starting_poses[1:,2:4] + delta_vel
-
-                # print ("goals.grad", goals.grad)
                 
                 goals = (goals + torch.clamp(lr * goals.grad,max=0.2,min=-0.2)).requires_grad_(True)
-
-        # with torch.no_grad():
-        #     for i in range( starting_poses.shape[0]):
-        #         for j in range(i,starting_poses.shape[0]):
-        #             # check that they are not in the same place
-        #             if i != j:
-        #                 starting_poses[i,0:2], starting_poses[j,0:2] = check_poses_not_the_same(starting_poses[i,0:2], starting_poses[j,0:2], gradient[i,0:2], gradient[j,0:2], lr)
         
         if inner_data.grad is not None:
            inner_data.grad.data.zero_()
@@ -156,13 +146,9 @@ if __name__ == '__main__':
         if starting_poses.grad is not None:
            starting_poses.grad.data.zero_()
         if (epoch_numb % 1 == 0):
-            # print ("probability_matrix:", probability_matrix)
-            # print("")
-            # print ("cost:", cost)
+
             print ('       ---iter # ',epoch_numb, "      cost: {:.1f}".format(prob_cost.sum().item()) ,'      iter time: ', "{:.3f}".format(time.time()-start) )
 
-        
-        # del cost
 
 
     print ("delta poses:", observed_state[:,0:2] - starting_poses[:,0:2])

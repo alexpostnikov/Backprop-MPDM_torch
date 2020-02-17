@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # gpu staff
     sequential = sequential.to(device)
     # gpu staff
-    for i in range (10):
+    for i in range (1000):
         if rospy.is_shutdown():
             break
         observed_state = param.input_state.clone().detach()
@@ -140,10 +140,8 @@ if __name__ == '__main__':
         # #### OPTIMIZATION ####
         global_start_time = time.time()
 
-        # , "slow"]#, "fast", , "left", "right"]
-
-        policies = ["stop", "go-solo", "left", "right"]#, "fast", "slow"]
-        # policies = ["stop", "go-solo"]
+        # policies = ["stop", "go-solo", "left", "right"]#, "fast", "slow"]
+        policies = ["go-solo"]
         results = []
         processes = []
         start = time.time()
@@ -188,7 +186,7 @@ if __name__ == '__main__':
         pol_numb = results.index(min(results))
         policy = policies[pol_numb]
         print(policy)
-        print ("done ", - start + time.time() )
+        print ("one step of choosing policy took ", "{:.1f}".format(- start + time.time()), "sec")
         
         with torch.no_grad():
             param.input_state, goals, param.robot_speed = apply_policy(
