@@ -4,11 +4,10 @@ import torch
 import math
 from force_attract_with_dest import force_goal, pose_propagation, is_goal_achieved, generate_new_goal
 from forward import calc_cost_function, calc_forces
-from Visualizer2 import Visualizer2
+from Utils import Visualizer2, Utils
 from Param import Param
 import rospy
 import time
-from utils import check_poses_not_the_same
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np

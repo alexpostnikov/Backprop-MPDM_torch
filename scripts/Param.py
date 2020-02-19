@@ -117,6 +117,9 @@ class Param:
         is_achieved = torch.sqrt(is_achieved[:,0]**2 + is_achieved[:,1]**2)
         return is_achieved<0.3
 
+    def update_num_ped(self, num_ped):
+        self.__init__(self.device, num_ped)
+
     def init_calcs(self,device):
         self.loop_sleep = 1/self.loop_rate
         self.goal_mean = self.area_size*torch.rand((self.num_ped,2))

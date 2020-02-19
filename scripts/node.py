@@ -2,9 +2,8 @@
 import rospy
 import random
 
-from Visualizer2 import Visualizer2, Rviz_sub
+from Utils import Visualizer2, Rviz_sub
 import numpy as np
-
 import torch
 from forward import calc_forces, pose_propagation, calc_cost_function
 from Param import Param
@@ -12,7 +11,7 @@ from optimization import get_poses_probability, Linear, optimize, lr, rotate, co
 # from optimisation import Linear
 import torch.nn as nn
 import time
-from utils import check_poses_not_the_same, setup_logger
+# from utils import check_poses_not_the_same, setup_logger TODO: pack this into class and import as the module
 import math
 from multiprocessing import Process
 
@@ -86,10 +85,10 @@ if __name__ == '__main__':
     device = torch.device("cpu")
     param = Param(device)    
     ##### logging init   #####
-    if param.do_logging:
-        logger = setup_logger(logger_name="mpdm node")
-        logger.info("sim params: num_ped" + str(param.num_ped) +
-                    "   num of layers " + str(param.number_of_layers))
+    # if param.do_logging:
+    #     logger = setup_logger(logger_name="mpdm node")
+    #     logger.info("sim params: num_ped" + str(param.num_ped) +
+    #                 "   num of layers " + str(param.number_of_layers))
 
     if param.do_visualization:
 

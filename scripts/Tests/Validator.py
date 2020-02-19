@@ -1,0 +1,159 @@
+
+import time
+import os
+import torch
+import math
+import sys
+import matplotlib.pyplot as plt
+
+
+class Validator():
+    def __init__(self, validation_param, sfm, dataloader, do_vis=False):
+        self.dataloader = dataloader
+        self.sfm = sfm
+        self.vp = validation_param
+        self.dataloader.reset_batch_pointer(valid=True)
+        plt.ion()
+        self.norms = []
+        self.do_vis = do_vis
+        self.save_data = []
+
+
+    def validate(self):
+        self.save_data = []
+        self.dataloader.reset_batch_pointer(valid=True)
+        for batch in range(0, 100):
+            self.dataloader.reset_batch_pointer(valid=True)
+            x, y, d, numPedsList, PedsList, target_ids = self.dataloader.next_batch()
+            starting_pose = self.dataloader.get_starting_pose(PedsList[0][0:1], x[0][0:1])
+            goals_ = self.dataloader.get_ped_goals(PedsList[0], x[0])
+            starting_time = self.dataloader.get_starting_time(PedsList[0], x[0])
+
+            self.vp.update_num_ped(len(starting_pose))
+
+            ped_poses = []
+            # print (x[0][0])
+            for i, key in enumerate(x[0][0]):
+                ped_poses.append([x[0][0][i][1], x[0][0][i][2], 0, 0])
+                self.vp.index_to_id[i] = x[0][0][i][0]
+
+            # print (ped_poses)
+            # print (v.index_to_id)
+            goals = []
+            for idx in range(0, len(ped_poses)):
+                goals.append(goals_[self.vp.index_to_id[idx]])
+
+            self.vp.param.input_state = torch.tensor(ped_poses)
+            self.vp.param.goal = torch.tensor(goals)
+
+            stacked_trajectories_for_visualizer = self.vp.param.input_state.clone()
+
+            if self.do_vis:
+                fig, ax = plt.subplots(1, 1)
+
+                ax.set_xlim(-10, 10)
+                ax.set_ylim(-10, 10)
+                plt.pause(0.01)
+                ax.set_xlabel('distance, m')
+                ax.set_ylabel('distance, m')
+
+                ax.set_title("prediction visualsiation")
+            cur_delta_pred = 0
+            print("new set!")
+            self.save_data.append("new set!")
+            for i in range(1, 20):
+                # if batch == 4:# and i == 7:
+                #     print("here")
+                # ADD A PERSON (stack to bottom)
+                if PedsList[0][i] != list(self.vp.index_to_id.values()):
+                    for ped_id in PedsList[0][i]:
+                        if ped_id not in list(self.vp.index_to_id.values()):
+                            pose = self.dataloader.get_starting_pose(
+                                PedsList[0][i:i+1], x[0][i:i+1])[ped_id]
+                            self.vp.param.input_state = torch.cat(
+                                (self.vp.param.input_state, torch.tensor([[pose[0], pose[1], 0, 0], ])))
+                            self.vp.param.num_ped += 1
+                            self.vp.param.generateMatrices()
+                            ped_goal = goals_[ped_id]
+
+                            self.vp.param.goal = torch.cat((self.vp.param.goal, torch.tensor(
+                                [[ped_goal[0], ped_goal[1]], ], dtype=self.vp.param.goal.dtype)))
+
+                            self.vp.index_to_id[self.vp.param.goal.shape[0]-1] = ped_id
+
+                # REMOVE PERSONS
+                rows_to_remove = []
+                for key in self.vp.index_to_id.keys():              
+                    if self.vp.index_to_id[key] not in PedsList[0][i]:
+                        rows_to_remove.append(key)
+
+                rows_to_remove.sort(reverse=True)
+                new_index_to_id = {}
+                del_counter = len(rows_to_remove)
+
+                for j in range(self.vp.param.input_state.shape[0]-1, -1, -1):
+                    if j in rows_to_remove:
+
+                        self.vp.param.input_state = torch.cat(
+                            (self.vp.param.input_state[0:j, :], self.vp.param.input_state[1+j:, :]))
+                        self.vp.param.goal = torch.cat((self.vp.param.goal[0:j, :], self.vp.param.goal[1+j:, :]))
+
+                        del_counter -= 1
+                        self.vp.param.num_ped -= 1
+                    else:
+                        # if del_counter<j:
+                        #     new_index_to_id[j-del_counter] = self.vp.index_to_id[j]
+                        # else:
+                        new_index_to_id[j-del_counter] = self.vp.index_to_id[j]
+                            # new_index_to_id[j] = self.vp.index_to_id[j]
+
+                self.vp.index_to_id = new_index_to_id.copy()
+                self.vp.param.generateMatrices()
+                # REMOVE PERSONS END
+
+                if self.do_vis:
+                    ax.plot(self.vp.param.input_state[:, 0:1].tolist(), self.vp.param.input_state[:, 1:2].tolist(
+                    ), "g*", markersize=3, label="predicted")
+                    ax.plot(torch.tensor(x[0][i-1])[:, 1:2].tolist(), torch.tensor(
+                        x[0][i-1])[:, 2:3].tolist(), "r*", markersize=3, label="GT")
+                    ax.grid(True)
+                    if i == 1:
+                        ax.legend(loc='best', frameon=False)
+                    ax.set_title(
+                        "prediction visualsiation\n cur_delta_pred" + str(cur_delta_pred))
+                    plt.draw()
+                    plt.show()
+                    plt.pause(0.1)
+
+                rf, af = self.sfm.calc_forces(self.vp.param.input_state, self.vp.param.goal, self.vp.param.pedestrians_speed,
+                                     self.vp.param.robot_speed, self.vp.param.k, self.vp.param.alpha, self.vp.param.ped_radius, self.vp.param.ped_mass, self.vp.param.betta)
+                F = rf + af
+                self.vp.param.input_state = self.sfm.pose_propagation(
+                    F, self.vp.param.input_state.clone(), self.vp.DT, self.vp.param.pedestrians_speed, self.vp.param.robot_speed)
+                stacked_trajectories_for_visualizer = torch.cat(
+                    (stacked_trajectories_for_visualizer, self.vp.param.input_state.clone()))
+                cur_delta_pred = torch.norm(
+                    self.vp.param.input_state[:, 0:2] - torch.tensor(x[0][i])[:, 1:3], dim=1)
+                if any(cur_delta_pred) > 2:
+                    print("here")
+                stroka = "\ncur_delta_pred " + str(cur_delta_pred.tolist())
+                print(stroka, end="\r")
+                self.save_data.append(stroka)
+
+                mean_cur_delta_pred = torch.mean(cur_delta_pred)
+                self.norms.append(mean_cur_delta_pred)
+            if self.do_vis:
+                plt.close()
+
+    def print_result(self):
+        print(torch.mean(torch.tensor((self.norms))))
+        print(self.save_data)
+
+    def save_result(self, filename = None, data = None):
+        from contextlib import redirect_stdout
+        if filename is None:
+            self.dir = os.path.dirname(os.path.abspath(__file__))
+            filename = self.dir + "/result.txt"
+        with open(filename, 'w') as file, redirect_stdout(file):
+            print(self.save_data)
+            print(torch.mean(torch.tensor((self.norms))))
