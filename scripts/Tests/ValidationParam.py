@@ -30,5 +30,4 @@ class ValidationParam():
         self.index_to_id = {}
 
     def add_person(self, pose, goal):
-        self.input_state_mean = torch.cat((self.input_state_mean, pose), dim=0)
-        self.goal = torch.cat((self.goal, goal), dim=0)
+        pass

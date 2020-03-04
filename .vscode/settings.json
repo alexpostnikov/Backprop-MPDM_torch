@@ -7,6 +7,6 @@
         "/opt/ros/melodic/lib/roslib",
         "/home/pazuzu/catkin_ws/src/Backprop-MPDM_torch/"
     ],
-    "python.pythonPath": "/usr/bin/python3",
+    "python.pythonPath": "/home/robot/miniconda3/envs/bonsai/bin/python",
     "python.dataScience.debugJustMyCode": false
 }

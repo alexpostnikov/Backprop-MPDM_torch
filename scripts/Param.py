@@ -1,7 +1,7 @@
 import torch
 
 class Param:
-    def __init__(self,device = None, num_ped=5):
+    def __init__(self,device = None, num_ped=10):
         self.device = device
         # ros
         self.loop_rate = 30.
@@ -35,9 +35,9 @@ class Param:
 
         # social force params
         self.socForceRobotPerson = {"k":2.3, "lambda":0.59, "A":3.66, "B":0.79,"d":0.65}
-        self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":12., "B":0.64,"d":0.26}
-        # self.socForceRobotPerson = {"k":1.3, "lambda":0.59, "A":2.66, "B":0.79,"d":0.5}
-        # self.socForcePersonPerson = {"k":2.9, "lambda":1., "A":10., "B":0.64,"d":0.16}
+        # self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":12., "B":0.64,"d":0.26}
+        self.socForcePersonPerson = {"k":5.5, "lambda":1.5, "A":8., "B":0.4,"d":0.01}
+
 
         self.a = 0.05
         self.b = 1 # 
@@ -118,7 +118,12 @@ class Param:
         return is_achieved<0.3
 
     def update_num_ped(self, num_ped):
-        self.__init__(self.device, num_ped)
+        self.num_ped = num_ped
+        self.generateMatrices()        
+        self.init_calcs(self.device)
+        self.robot_goal = self.goal[0,2:4]
+        self.to_device(self.device)
+        # self.__init__(self.device, num_ped)
 
     def init_calcs(self,device):
         self.loop_sleep = 1/self.loop_rate

@@ -2,7 +2,8 @@
 import rospy
 import random
 
-from Utils import Visualizer2, Rviz_sub
+from Utils.Rviz_sub import Rviz_sub
+from Utils.Visualizer2 import Visualizer2
 import numpy as np
 import torch
 from forward import calc_forces, pose_propagation, calc_cost_function

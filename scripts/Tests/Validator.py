@@ -5,7 +5,7 @@ import torch
 import math
 import sys
 import matplotlib.pyplot as plt
-
+from torch.utils.tensorboard import SummaryWriter
 
 class Validator():
     def __init__(self, validation_param, sfm, dataloader, do_vis=False):
@@ -22,7 +22,13 @@ class Validator():
     def validate(self):
         self.save_data = []
         self.dataloader.reset_batch_pointer(valid=True)
-        for batch in range(0, 100):
+        log_folder = 1
+        while os.path.isdir('log/'+str(log_folder)):
+            log_folder+=1
+        os.mkdir('log/'+str(log_folder))
+        w = SummaryWriter('log/'+str(log_folder))
+        
+        for batch in range(0, 300):
             self.dataloader.reset_batch_pointer(valid=True)
             x, y, d, numPedsList, PedsList, target_ids = self.dataloader.next_batch()
             starting_pose = self.dataloader.get_starting_pose(PedsList[0][0:1], x[0][0:1])
@@ -59,11 +65,9 @@ class Validator():
 
                 ax.set_title("prediction visualsiation")
             cur_delta_pred = 0
-            print("new set!")
             self.save_data.append("new set!")
-            for i in range(1, 20):
-                # if batch == 4:# and i == 7:
-                #     print("here")
+            for i in range(1, 13):
+
                 # ADD A PERSON (stack to bottom)
                 if PedsList[0][i] != list(self.vp.index_to_id.values()):
                     for ped_id in PedsList[0][i]:
@@ -101,11 +105,7 @@ class Validator():
                         del_counter -= 1
                         self.vp.param.num_ped -= 1
                     else:
-                        # if del_counter<j:
-                        #     new_index_to_id[j-del_counter] = self.vp.index_to_id[j]
-                        # else:
                         new_index_to_id[j-del_counter] = self.vp.index_to_id[j]
-                            # new_index_to_id[j] = self.vp.index_to_id[j]
 
                 self.vp.index_to_id = new_index_to_id.copy()
                 self.vp.param.generateMatrices()
@@ -134,20 +134,27 @@ class Validator():
                     (stacked_trajectories_for_visualizer, self.vp.param.input_state.clone()))
                 cur_delta_pred = torch.norm(
                     self.vp.param.input_state[:, 0:2] - torch.tensor(x[0][i])[:, 1:3], dim=1)
-                if any(cur_delta_pred) > 2:
-                    print("here")
+                mean_cur_delta_pred = torch.mean(cur_delta_pred)
+
+                
+                w.add_scalar("cur_averaged_delta", mean_cur_delta_pred, batch*100+i)
                 stroka = "\ncur_delta_pred " + str(cur_delta_pred.tolist())
-                print(stroka, end="\r")
+                # print(stroka, end="\r")
                 self.save_data.append(stroka)
 
-                mean_cur_delta_pred = torch.mean(cur_delta_pred)
+                
                 self.norms.append(mean_cur_delta_pred)
             if self.do_vis:
                 plt.close()
+        w.add_scalar("mean_averaged_delta", torch.mean(torch.tensor((self.norms))), 0)
+        w.add_scalar("mean_averaged_delta", torch.mean(torch.tensor((self.norms))), 1)
 
     def print_result(self):
         print(torch.mean(torch.tensor((self.norms))))
-        print(self.save_data)
+        
+    def get_result(self):
+        return torch.mean(torch.tensor((self.norms)))
+        
 
     def save_result(self, filename = None, data = None):
         from contextlib import redirect_stdout
