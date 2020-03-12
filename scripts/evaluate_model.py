@@ -115,11 +115,11 @@ def evaluate(args, loader, generator, num_samples):
                 # ax.plot(rel5[:,0],rel5[:,1],'-',label="obs_traj_rel")
 
 
-                rel2 = pred_traj_fake.detach().cpu()
-                ax.plot(rel2[:,0],rel2[:,1],'*',label="pred_traj_fake")
-                pred_traj = pred_traj_gt.detach().cpu()
-                ax.plot(pred_traj[:,0],pred_traj[:,1], "-",label="pred_traj_gt")
-
+                traj_fake = pred_traj_fake.detach().cpu()
+                ax.plot(traj_fake[:,0],traj_fake[:,1],'*',label="pred_traj_fake")
+                traj_gt = pred_traj_gt.detach().cpu()
+                ax.plot(traj_gt[:,0],traj_gt[:,1], "-",label="pred_traj_gt")
+                
                 ax.legend()
                 plt.show()
                 # print("pred_traj_fake_rel")
