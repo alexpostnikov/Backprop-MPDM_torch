@@ -5,6 +5,7 @@ class Param:
         self.device = device
         # ros
         self.loop_rate = 30.
+        self.learning_rate = 10.
         
         
         self.num_ped = num_ped
@@ -172,7 +173,15 @@ if __name__ == "__main__":
     m = torch.distributions.normal.Normal(torch.tensor([0.0, 5.2]), torch.tensor([1.0, 0.02]))
     t = m.sample()  # normally distributed with loc=0 and scale=1
     print (t)
-    
+
+
+class ROS_Param(Param):
+    # TODO: get params from rosparam server
+    def __init__(self):
+        super().__init__()
+
+        pass
+ 
 
 
 

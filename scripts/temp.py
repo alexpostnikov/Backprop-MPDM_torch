@@ -5,7 +5,8 @@ print (sys.version)
 import torch
 from force_attract_with_dest import force_goal, pose_propagation, is_goal_achieved, generate_new_goal
 from forward import calc_cost_function, calc_forces
-from Visualizer2 import Visualizer2, Rviz_sub
+from Utils.RvizSub import RvizSub
+from Utils.Visualizer2 import Visualizer2
 from Param import Param
 import rospy
 import time

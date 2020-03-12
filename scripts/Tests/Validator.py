@@ -18,7 +18,6 @@ class Validator():
         self.do_vis = do_vis
         self.save_data = []
 
-
     def validate(self):
         self.save_data = []
         self.dataloader.reset_batch_pointer(valid=True)
@@ -154,7 +153,6 @@ class Validator():
         
     def get_result(self):
         return torch.mean(torch.tensor((self.norms)))
-        
 
     def save_result(self, filename = None, data = None):
         from contextlib import redirect_stdout

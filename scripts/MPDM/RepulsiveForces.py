@@ -3,7 +3,8 @@ import numpy as np
 import math
 
 class RepulsiveForces():
-    def __init__(self):
+    def __init__(self, param):
+        self.param = param
         self.num_ped = None
         self.aux1 = None
         self.auxullary = None
@@ -83,7 +84,12 @@ class RepulsiveForces():
             self.aux2 = self.aux1.clone().t()
 
 
-    def calc_rep_forces(self, state, A=10, ped_radius=0.3, ped_mass=60, betta=0.08, velocity_state = None, param_lambda = 1):
+    def calc_rep_forces(self, state, A=10, velocity_state = None, param_lambda = 1):
+        ps = self.param.ped_radius
+        pm = self.param.ped_mass
+        betta = self.param.betta
+
+
         if (state.shape[0]-1) != self.num_ped:
             self.change_num_of_ped(state.shape[0]-1)
 
@@ -119,7 +125,7 @@ class RepulsiveForces():
         # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
         # according to Headed Social Force Model
         
-        force_amplitude = A * torch.exp((ped_radius - dist) / betta)
+        force_amplitude = A * torch.exp((ps - dist) / betta)
         
         # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
 

@@ -1,26 +1,26 @@
 
 import torch
+
+
 class SFM:
-    def __init__(self, repulsive_forces):
+    def __init__(self, repulsive_forces, param):
         self.rep_f = repulsive_forces
-        pass
+        self.param = param
 
-    def pose_propagation(self, force, state, DT, pedestrians_speed, robot_speed):
-
+    def pose_propagation(self, force, state):
+        DT = self.param.DT
+        ps = self.param.pedestrians_speed
+        rs = self.param.robot_speed
         vx_vy_uncl = state[:, 2:4] + (force*DT)
         dx_dy = state[:, 2:4]*DT + (force*(DT**2))*0.5
 
         # //apply constrains:
         # torch.sqrt(vx_vy[:,0:1]**2 + vx_vy[:,1:2]**2)
         pose_prop_v_unclamped = vx_vy_uncl.norm(dim=1)
-        pose_prop_v = torch.clamp(
-            pose_prop_v_unclamped, min=-pedestrians_speed, max=pedestrians_speed)
-        pose_prop_v[0] = torch.clamp(
-            pose_prop_v_unclamped[0], min=-robot_speed, max=robot_speed)
-        vx_vy = torch.clamp(
-            vx_vy_uncl, min=-pedestrians_speed, max=pedestrians_speed)
-        vx_vy[0, :] = torch.clamp(
-            vx_vy_uncl[0, :], min=-robot_speed, max=robot_speed)
+        pose_prop_v = torch.clamp(pose_prop_v_unclamped, min=-ps, max=ps)
+        pose_prop_v[0] = torch.clamp(pose_prop_v_unclamped[0], min=-rs, max=rs)
+        vx_vy = torch.clamp(vx_vy_uncl, min=-ps, max=ps)
+        vx_vy[0, :] = torch.clamp(vx_vy_uncl[0, :], min=-rs, max=rs)
 
         dr = dx_dy.norm(dim=1)  # torch.sqrt(dx_dy[:,0:1]**2 + dx_dy[:,1:2]**2)
         mask = (pose_prop_v * DT < dr)  # * torch.ones(state.shape[0])
@@ -32,20 +32,57 @@ class SFM:
 
         state[:, 2:4] = vx_vy
         return state
-    
-    
-    def calc_forces(self, state, goals, pedestrians_speed, robot_speed, k, alpha, ped_radius, ped_mass, betta, param_lambda = 1):
-        rep_force = self.rep_f.calc_rep_forces(state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
+
+    def calc_cost_function(self, goal, init_pose, agents_pose, policy=None):
+        a = self.param.a
+        b = self.param.b
+        e = self.param.e
+        robot_pose = agents_pose[0, 0:2].clone()
+        robot_speed = agents_pose[0, 2:4].clone()
+        PG = (robot_pose - init_pose).dot((-init_pose +
+                                           goal[0])/torch.norm(-init_pose+goal[0]))
+        # Blame
+        # PG = torch.clamp(PG, max = 0.5)
+        B = torch.zeros(len(agents_pose), 1, requires_grad=False)
+        # if torch.norm(robot_speed) > e:
+        agents_speed = agents_pose[:, 0:2]
+        delta = agents_speed - robot_pose
+        norm = -torch.norm(delta, dim=1)/b
+        B = torch.exp(norm)  # +0.5
+        # Overall Cost
+        # PG = PG/len(agents_pose)
+        B = (-a*PG+1*B)
+        B = B/len(agents_pose)
+        B = torch.clamp(B, min=0.002)
+        # if ppp != policy:
+        #     print (goal, policy)
+        #     ppp = policy
+        # print (PG, policy)
+        return B
+
+    def calc_forces(self, state, goals):
+        betta = self.param.betta
+        pm = self.param.ped_mass
+        pr = self.param.ped_radius
+        alpha = self.param.alpha
+        rs = self.param.robot_speed
+        ps = self.param.pedestrians_speed
+        k = self.param.k
+
+        rep_force = self.rep_f.calc_rep_forces(state[:, 0:2], state[:, 2:4], param_lambda=1)
         # rep_force[0] = 0*rep_force[0]
-        attr_force = self.force_goal(state, goals, pedestrians_speed,robot_speed, k)
+        attr_force = self.force_goal(state, goals, ps, rs, k)
         return rep_force, attr_force
 
-
-    def force_goal(self, input_state, goal, pedestrians_speed, robot_speed, k):
-        v_desired_x_y =  goal[:,0:2]  - input_state[:,0:2]
-        v_desired_ = torch.sqrt(v_desired_x_y.clone()[:,0:1]**2 + v_desired_x_y.clone()[:,1:2]**2)	
-        v_desired_x_y[1:-1, :] *= pedestrians_speed / v_desired_[1:-1, :]
-        v_desired_x_y[0,:] *= robot_speed / v_desired_[0,:]
+    def force_goal(self, input_state, goal):
+        k = self.param.k
+        ps = self.param.pedestrians_speed
+        rs = self.param.robot_speed
+        v_desired_x_y = goal[:, 0:2] - input_state[:, 0:2]
+        v_desired_ = torch.sqrt(v_desired_x_y.clone(
+        )[:, 0:1]**2 + v_desired_x_y.clone()[:, 1:2]**2)
+        v_desired_x_y[1:-1, :] *= ps / v_desired_[1:-1, :]
+        v_desired_x_y[0, :] *= rs / v_desired_[0, :]
         # print (pedestrians_speed)
-        F_attr = k * (v_desired_x_y - input_state[:,2:4])
+        F_attr = k * (v_desired_x_y - input_state[:, 2:4])
         return F_attr

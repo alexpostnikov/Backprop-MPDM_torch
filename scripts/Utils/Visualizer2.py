@@ -72,7 +72,7 @@ class Visualizer2:
                 point_marker.type = Marker.CUBE
             if self.mesh_resource is not None:
                 point_marker.type = Marker.MESH_RESOURCE
-                point_marker.mesh_resource = "package://mpdm/mesh/"+self.mesh_resource  # "robot2.stl"
+                point_marker.mesh_resource = "package://mpdm/resource/mesh/"+self.mesh_resource  # "robot2.stl"
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)
