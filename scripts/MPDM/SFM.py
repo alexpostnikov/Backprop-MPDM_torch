@@ -61,17 +61,9 @@ class SFM:
         return B
 
     def calc_forces(self, state, goals):
-        betta = self.param.betta
-        pm = self.param.ped_mass
-        pr = self.param.ped_radius
-        alpha = self.param.alpha
-        rs = self.param.robot_speed
-        ps = self.param.pedestrians_speed
-        k = self.param.k
-
         rep_force = self.rep_f.calc_rep_forces(state[:, 0:2], state[:, 2:4], param_lambda=1)
         # rep_force[0] = 0*rep_force[0]
-        attr_force = self.force_goal(state, goals, ps, rs, k)
+        attr_force = self.force_goal(state, goals)
         return rep_force, attr_force
 
     def force_goal(self, input_state, goal):

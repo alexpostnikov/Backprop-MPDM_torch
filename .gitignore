@@ -8,3 +8,4 @@ logs/*
 .ipynb_checkpoints/*
 *.log
 *.pyc
+*.bag

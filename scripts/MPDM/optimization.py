@@ -28,29 +28,22 @@ def get_poses_probability(agents_pose, agents_pose_distrib, index_X=0, index_Y=1
 
 
 class Linear(nn.Module):
-    def __init__(self, sfm, param):  # input_features, output_features, bias=True):
+    def __init__(self, sfm):  # input_features, output_features, bias=True):
         super(Linear, self).__init__()
         self.sfm = sfm
-        self.param = param
 
     def forward(self, input):
-
-        # input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
-        state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
-        
+        state, cost, stacked_trajectories_for_visualizer, goals, robot_init_pose, policy = input
         # state = 1 * input_state
-        rf, af = sfm.calc_forces(state, goals, param.pedestrians_speed, param.robot_speed,
-                             param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
+        rf, af = self.sfm.calc_forces(state, goals)
         F = rf + af
-        out = self.sfm.pose_propagation(F, state.clone(), param.DT,
-                               param.pedestrians_speed, param.robot_speed)
-        temp = sfm.calc_cost_function(
-            param.a, param.b, param.e, param.goal, robot_init_pose, out, policy)
+        out = self.sfm.pose_propagation(F, state.clone())
+        temp = self.sfm.calc_cost_function(goals, robot_init_pose, out, policy)
         new_cost = cost + (temp.view(-1, 1))
         stacked_trajectories_for_visualizer = torch.cat(
             (stacked_trajectories_for_visualizer, state.clone()))
 
-        return (out, new_cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy)
+        return (out, new_cost, stacked_trajectories_for_visualizer, goals, robot_init_pose, policy)
 
 # class Optimize():
 #     def __init__(self,):
