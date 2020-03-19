@@ -34,6 +34,8 @@ class Linear(nn.Module):
 
     def forward(self, input):
         state, cost, stacked_trajectories_for_visualizer, goals, robot_init_pose, policy = input
+        if stacked_trajectories_for_visualizer is None: 
+           stacked_trajectories_for_visualizer = state.clone()
         # state = 1 * input_state
         rf, af = self.sfm.calc_forces(state, goals)
         F = rf + af

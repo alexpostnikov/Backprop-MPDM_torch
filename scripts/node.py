@@ -18,7 +18,7 @@ if __name__ == '__main__':
     sfm = SFM(rep_f, param)
     mpdm = MPDM(param, sfm)
     map = ps.map.update_static_map()
-
+    rospy.sleep(1.0)
     while not (rospy.is_shutdown()):
         robot, path = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()

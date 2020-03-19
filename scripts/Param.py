@@ -44,9 +44,10 @@ class Param:
         self.b = 1 # 
         self.e = 0.001 # min speed fo blame
         self.robot_speed = 1.0
+        self.lr = 10**-4
 
 
-        self.generateMatrices()        
+        # self.generateMatrices()        
         self.init_calcs(device)
         self.robot_goal = self.goal[0,2:4]
         self.to_device(device)
@@ -71,33 +72,33 @@ class Param:
         self.goal = self.goal_mean
         self.goal = self.goal.view(-1, 2)
 
-    def generateMatrices(self):
-        self.alpha = self.socForcePersonPerson["A"] * (1 - torch.eye(self.num_ped,self.num_ped))
-        self.alpha[0,:] = self.socForceRobotPerson["A"]
-        self.alpha[:,0] = self.socForceRobotPerson["A"]
+    # def generateMatrices(self):
+        # self.alpha = self.socForcePersonPerson["A"] * (1 - torch.eye(self.num_ped,self.num_ped))
+        # self.alpha[0,:] = self.socForceRobotPerson["A"]
+        # self.alpha[:,0] = self.socForceRobotPerson["A"]
 
-        self.betta = self.socForcePersonPerson["B"] * torch.ones(self.num_ped,self.num_ped)
-        self.betta[0,:] = self.socForceRobotPerson["B"]
-        self.betta[:,0] = self.socForceRobotPerson["B"]
+        # self.betta = self.socForcePersonPerson["B"] * torch.ones(self.num_ped,self.num_ped)
+        # self.betta[0,:] = self.socForceRobotPerson["B"]
+        # self.betta[:,0] = self.socForceRobotPerson["B"]
 
-        self.k = self.socForcePersonPerson["k"] * torch.ones(self.num_ped)
-        self.k[0] = self.socForceRobotPerson["k"]
-        self.k  = self.k.view(-1,1)
+        # self.k = self.socForcePersonPerson["k"] * torch.ones(self.num_ped)
+        # self.k[0] = self.socForceRobotPerson["k"]
+        # self.k  = self.k.view(-1,1)
 
-        self.ped_radius = self.socForcePersonPerson["d"] * torch.ones(self.num_ped,self.num_ped)
-        self.ped_radius[0,:] = self.socForceRobotPerson["d"]
-        self.ped_radius[:,0] = self.socForceRobotPerson["d"]
+        # self.ped_radius = self.socForcePersonPerson["d"] * torch.ones(self.num_ped,self.num_ped)
+        # self.ped_radius[0,:] = self.socForceRobotPerson["d"]
+        # self.ped_radius[:,0] = self.socForceRobotPerson["d"]
 
-        self.lamb = self.socForcePersonPerson["lambda"] * torch.ones(self.num_ped,self.num_ped)
-        self.lamb[0,:] = self.socForceRobotPerson["lambda"]
-        self.lamb[:,0] = self.socForceRobotPerson["lambda"]
+        # self.lamb = self.socForcePersonPerson["lambda"] * torch.ones(self.num_ped,self.num_ped)
+        # self.lamb[0,:] = self.socForceRobotPerson["lambda"]
+        # self.lamb[:,0] = self.socForceRobotPerson["lambda"]
 
-        if self.device is not None:
-            self.ped_radius = self.ped_radius.to(self.device)
-            self.k = self.k.to(self.device)
-            self.betta = self.betta.to(self.device)
-            self.alpha = self.alpha.to(self.device)
-            self.lamb = self.lamb.to(self.device)
+        # if self.device is not None:
+        #     self.ped_radius = self.ped_radius.to(self.device)
+        #     self.k = self.k.to(self.device)
+        #     self.betta = self.betta.to(self.device)
+        #     self.alpha = self.alpha.to(self.device)
+        #     self.lamb = self.lamb.to(self.device)
 
 
     def generate_new_goal(self, goals, input_state):
@@ -120,7 +121,7 @@ class Param:
 
     def update_num_ped(self, num_ped):
         self.num_ped = num_ped
-        self.generateMatrices()        
+        # self.generateMatrices()        
         self.init_calcs(self.device)
         self.robot_goal = self.goal[0,2:4]
         self.to_device(self.device)
