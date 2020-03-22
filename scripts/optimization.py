@@ -53,11 +53,10 @@ class Linear(nn.Module):
         pass
 
     def forward(self, input):
-
-        # input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
         state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
-        # state = 1 * input_state       
+        
         rf, af = calc_forces(state, goals, param.pedestrians_speed, param.robot_speed, param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
+        
         F = rf + af
         out = pose_propagation(F, state.clone(), param.DT, param.pedestrians_speed, param.robot_speed)
         temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, out, policy)
@@ -73,8 +72,6 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
     for epoch_numb in range(0,epochs):
         if rospy.is_shutdown():
                 break
-
-
         max_cost = -math.inf
         start = time.time()    
         stacked_trajectories_for_visualizer = starting_poses.clone()
@@ -95,7 +92,6 @@ def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, p
         goal_prob[0] = 1.
         _, cost, stacked_trajectories_for_visualizer, _,_ ,_ ,_= model((inner_data, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy))
         
-        # print (goals)
         #### VISUALIZE ####
         if param.do_visualization and None not in [ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer]:
             ped_goals_visualizer.publish(goals)

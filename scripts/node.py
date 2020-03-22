@@ -140,8 +140,8 @@ if __name__ == '__main__':
         # #### OPTIMIZATION ####
         global_start_time = time.time()
 
-        # policies = ["stop", "go-solo", "left", "right"]#, "fast", "slow"]
-        policies = ["go-solo"]
+        policies = ["stop", "go-solo"]#, "left", "right"]#, "fast", "slow"]
+        # policies = ["go-solo"]
         results = []
         processes = []
         start = time.time()
@@ -194,6 +194,7 @@ if __name__ == '__main__':
 
         with torch.no_grad():
             # propagate
+           
             rf, af = calc_forces(param.input_state, goals, param.pedestrians_speed, param.robot_speed,
                                  param.k, param.alpha, param.ped_radius, param.ped_mass, param.betta)
             F = rf + af
