@@ -3,7 +3,7 @@ import rospy
 import random
 
 from Utils.Rviz_sub import Rviz_sub
-from Utils.Visualizer2 import Visualizer2
+from Utils.Visualizer2 import Visualizer2, Visualizer2_colored
 import numpy as np
 import torch
 from forward import calc_forces, pose_propagation, calc_cost_function
@@ -15,6 +15,8 @@ import time
 # from utils import check_poses_not_the_same, setup_logger TODO: pack this into class and import as the module
 import math
 from multiprocessing import Process
+
+from lstm_datagen import *
 
 
 def get_policy_cost(sequential, observed_state, goals, param, lr, ped_goals_visualizer,
@@ -78,6 +80,7 @@ def apply_policy(policy, starting_poses, goals, robot_speed):
 
 if __name__ == '__main__':
       # torch.autograd.set_detect_anomaly(True)
+    
     rospy.init_node("mpdm")
     if torch.cuda.is_available():
         device = torch.device("cuda:0")
@@ -90,6 +93,15 @@ if __name__ == '__main__':
     #     logger = setup_logger(logger_name="mpdm node")
     #     logger.info("sim params: num_ped" + str(param.num_ped) +
     #                 "   num of layers " + str(param.number_of_layers))
+    
+    #### LSTM INIT  PART ####
+    datagen = Lstm_Datagen(num_peds=param.num_ped, pred_length=param.number_of_layers,obs_length=8)
+    sample_args = Sample_args(pl=param.number_of_layers,ol=8)
+    net,saved_args = get_net(sample_args)
+    for paramet in net.parameters():
+        paramet.requiers_grad = True
+
+    ########    ##########
 
     if param.do_visualization:
 
@@ -103,8 +115,11 @@ if __name__ == '__main__':
         policy_visualizer = Visualizer2(
             "robot_policy", color=1,  with_text=False)
         learning_vis = Visualizer2(
-            "peds/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
+            "peds/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False, a=0.5)
+        learning_vis_lstm = Visualizer2_colored(
+            "peds/learning_lstm", size=[0.1, 0.1, .05], color=3, with_text=False, ped_num=param.num_ped)
 
+    learning_vis_lstm.calc_ped_number_colors()
     modules = []
     for i in range(0, param.number_of_layers):
         modules.append(Linear())
@@ -120,7 +135,21 @@ if __name__ == '__main__':
     for i in range (1000):
         if rospy.is_shutdown():
             break
+        time.sleep(1)
         observed_state = param.input_state.clone().detach()
+        datagen.update_scene(observed_state)
+        robot_init_pose = observed_state[0, 0:2]
+        if datagen.is_redy_to_predict:
+            st = time.time()
+            out, orig = process(datagen,net,sample_args,saved_args, 0) 
+            cost = 0
+            learning_vis_lstm.publish(out[datagen.obs_length-1:].reshape(-1,2).cpu().detach())
+            for poses_at_timestemp in out:
+                
+                temp = calc_cost_function(param.a, param.b, param.e, param.goal, robot_init_pose, poses_at_timestemp, policy)
+                cost += sum(temp)
+            print ("inf time: ", time.time()- st)
+
         # observed_state = observed_state.to(device)
         cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
         # param.robot_init_pose.requires_grad_(True)

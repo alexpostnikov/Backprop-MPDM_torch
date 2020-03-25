@@ -187,8 +187,6 @@ if __name__ == '__main__':
         robot_visualizer = None
         learning_vis = None
 
-
-
     observed_state = param.input_state.clone().detach()
     cost = torch.zeros(param.num_ped, 1).requires_grad_(True)
     robot_init_pose = observed_state[0,0:2]#param.robot_init_pose.requires_grad_(True)

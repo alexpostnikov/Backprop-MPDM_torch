@@ -3,10 +3,11 @@ import time
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
 from geometry_msgs.msg import Point, Pose, Vector3, PointStamped, PoseStamped, PoseWithCovarianceStamped
+import numpy as np
 
 class Visualizer2:
 
-    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0, mesh_resource=None, mesh_scale=None):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0, mesh_resource=None, mesh_scale=None, a= 1.):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
         self.with_text = with_text
@@ -16,7 +17,7 @@ class Visualizer2:
             size[2] *= mesh_scale
         self.point_scale = Vector3(size[0], size[1], size[2])
         self.mesh_resource = mesh_resource
-        self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/4)
+        self.text_scale = Vector3(0, 0, (size[0]+size[1]+size[2])/8)
         self.text_color = ColorRGBA(0, 0, 0, 1)
         self.starting_id = starting_id
 
@@ -24,18 +25,18 @@ class Visualizer2:
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
         self.first_arrow_scale = Vector3(0.08/10., 0.2/10., 0.2/10.)
         self.point_colors = [
-            ColorRGBA(1, 1, 1, 1),    # 0 - white
-            ColorRGBA(0, 1, 0, 1),    # 1 - green
-            ColorRGBA(0, 0, 1, 1),    # 2 - blue
-            ColorRGBA(1, 0, 0, 1),    # 3 - red
-            ColorRGBA(0, 0, 0, 1)     # 4 - black
+            ColorRGBA(1, 1, 1, a),    # 0 - white
+            ColorRGBA(0, 1, 0, a),    # 1 - green
+            ColorRGBA(0, 0, 1, a),    # 2 - blue
+            ColorRGBA(1, 0, 0, a),    # 3 - red
+            ColorRGBA(0, 0, 0, a)     # 4 - black
         ]
         self.point_color = self.point_colors[color]
         self.arrow_colors = [
-            ColorRGBA(0, 1, 0, 1),    # force 1 - green
-            ColorRGBA(0, 0, 1, 1),    # force 2 - blue
-            ColorRGBA(1, 0, 0, 1),    # force 3 - red
-            ColorRGBA(0, 0, 0, 1)     # force 4 - black
+            ColorRGBA(0, 1, 0, a),    # force 1 - green
+            ColorRGBA(0, 0, 1, a),    # force 2 - blue
+            ColorRGBA(1, 0, 0, a),    # force 3 - red
+            ColorRGBA(0, 0, 0, a)     # force 4 - black
         ]
         pass
 
@@ -82,7 +83,7 @@ class Visualizer2:
                 text_pose = Pose()
                 text_pose.position.x = agent[0]
                 text_pose.position.y = agent[1]
-                text_pose.position.z = self.point_scale.z+self.text_scale.z/1.7
+                text_pose.position.z = self.point_scale.z+self.text_scale.z
                 text_marker = Marker(
                     id=id,
                     type=Marker.TEXT_VIEW_FACING,
@@ -125,3 +126,109 @@ class Visualizer2:
                 f_num += 1
                 forces = forces[2:]
         self.publisher.publish(markerArray)
+
+
+
+class Visualizer2_colored(Visualizer2):
+    def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0, mesh_resource=None, mesh_scale=None,ped_num=None):
+        Visualizer2.__init__(self,  topic_name, frame_id, color, size, with_text, starting_id, mesh_resource, mesh_scale)
+        self.ped_num = ped_num
+        self.ped_colors = []
+    
+    def set_ped_num(self, number):
+        self.ped_num = number
+
+    def calc_ped_number_colors(self):
+        assert (self.ped_num is not None)
+        for i in range(self.ped_num):
+            self.ped_colors.append(ColorRGBA(np.random.rand(),np.random.rand(),np.random.rand(),np.random.rand()))
+
+            
+
+    def publish(self, data, text=None):
+
+        # [ [x,y,x1,y1,x2,y2]
+        #   [x,y,x1,y1]
+        #   [x,y,x1,y1,x2,y2,x3,y3,...]
+        # ]
+        # x,y - coord of point
+        # xn,yn - n forces
+        markerArray = MarkerArray()
+
+        id = 0
+
+        # first_point = True
+        for ped_num, n in enumerate(range(len(data))):
+            agent = data[n]
+            pose = Pose()
+            pose.position.x = agent[0]
+            pose.position.y = agent[1]
+            pose.position.z = self.point_scale.z/1.5
+            pose.orientation.w = 1
+
+            point_marker = Marker(
+                id=id,
+                type=Marker.SPHERE,
+                action=Marker.ADD,
+                scale=self.point_scale,
+                color=self.ped_colors[ped_num % self.ped_num],  # 0 - point color
+                pose=pose
+            )
+            if len(agent) < 3:
+                point_marker.type = Marker.CUBE
+            if self.mesh_resource is not None:
+                point_marker.type = Marker.MESH_RESOURCE
+                point_marker.mesh_resource = "package://mpdm/mesh/"+self.mesh_resource  # "robot2.stl"
+            point_marker.header.frame_id = self.frame_id
+            id += 1
+            markerArray.markers.append(point_marker)
+
+            # add some text
+            if self.with_text or text:
+                text_pose = Pose()
+                text_pose.position.x = agent[0]
+                text_pose.position.y = agent[1]
+                text_pose.position.z = self.point_scale.z+self.text_scale.z/1.2
+                text_marker = Marker(
+                    id=id,
+                    type=Marker.TEXT_VIEW_FACING,
+                    action=Marker.ADD,
+                    scale=self.text_scale,
+                    color=self.text_color,  # 0 - point color
+                    pose=text_pose,
+                    text=str(n+self.starting_id)
+                )
+                text_marker.text = str(n+self.starting_id)
+                if text:
+                    text_marker.text = text
+                text_marker.header.frame_id = self.frame_id
+                id += 1
+                markerArray.markers.append(text_marker)
+
+            forces = agent[2:]
+            f_num = 0
+            first_arrow = True
+            while len(forces > 0):
+                first_point = Point(agent[0], agent[1], 0)  # coords of arrow
+                second_point = Point(
+                    agent[0]+forces[0], agent[1]+forces[1], 0)  # coords of arrow
+                arrow = Marker(
+                    id=id,
+                    type=Marker.ARROW,
+                    action=Marker.ADD,
+                    scale=self.arrow_scale,
+                    color=self.arrow_colors[f_num],  # color of arrow
+                    points=[first_point, second_point],
+                    colors=[self.arrow_colors[f_num],
+                            self.arrow_colors[f_num]]  # color of arrow
+                )
+                if first_arrow:
+                    first_arrow = False
+                    arrow.scale = self.first_arrow_scale
+                arrow.header.frame_id = self.frame_id
+                markerArray.markers.append(arrow)
+                id += 1
+                f_num += 1
+                forces = forces[2:]
+        self.publisher.publish(markerArray)
+    
