@@ -38,7 +38,7 @@ def calc_linear_covariance(x):
     return peds
 
 def plot_cov(ped_cov, isok=3):
-    colors = ["b", "r", "g", "y"]
+    colors = ["b", "r", "g", "y"]*3
     i = 0
     fig, ax = plt.subplots(1, 1)
     ax.set_xlim(-10, 10)
@@ -90,6 +90,8 @@ class Validator():
         for batch in range(0, 300):
             self.dataloader.reset_batch_pointer(valid=True)
             x, y, d, numPedsList, PedsList, target_ids = self.dataloader.next_batch()
+            if np.linalg.norm(x[0][0][0] - x[0][19][0])<1.0:
+                continue
             starting_pose = self.dataloader.get_starting_pose(
                 PedsList[0][0:1], x[0][0:1])
             goals_ = self.dataloader.get_ped_goals(PedsList[0], x[0])
@@ -228,3 +230,6 @@ class Validator():
         with open(filename, 'w') as file, redirect_stdout(file):
             print(self.save_data)
             print(torch.mean(torch.tensor((self.norms))))
+
+
+

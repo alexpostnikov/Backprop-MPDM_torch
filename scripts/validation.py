@@ -12,6 +12,7 @@ from Tests.ValidationParam import ValidationParam
 from Tests.DataLoader import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
+import time
 rep_f = RepulsiveForces()
 sfm = SFM(rep_f)
 
@@ -70,6 +71,7 @@ for ped_speed in HP_ped_speed:
                             }
                             
                             validator.validate()
+                            
                             validator.print_result()
                             validator.save_result(cur_dir+"/validation_result.txt")
                             w.add_hparams(hparams, {'hparam/aw_dist': validator.get_result()})
