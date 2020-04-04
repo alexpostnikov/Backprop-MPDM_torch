@@ -5,7 +5,7 @@ class ValidationParam():
 
     def __init__(self, param):
         self.param = param
-        self.DT = 0.4
+        self.DT = 0.2
         self.index_to_id = {}
         # for i,_ in enumerate(self.input_state):
         #     self.index_to_id[i] = i

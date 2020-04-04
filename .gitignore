@@ -6,3 +6,6 @@ scripts/.vscode/*
 .ipynb_checkpoints/*
 *.log
 *.pyc
+log/*
+hp_tuning_1/*
+*.npz

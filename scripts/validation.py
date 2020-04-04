@@ -23,12 +23,12 @@ vp = ValidationParam(param)
 steps = 10
 
 
-HP_ped_speed = [1,1.5]
-HP_socForcePersonPerson_k =       [5.5]
-HP_socForcePersonPerson_lyambda = [1.5]
-HP_socForcePersonPerson_A =       [8]
-HP_socForcePersonPerson_B =       [0.4]
-HP_socForcePersonPerson_d =       np.linspace(0.001,0.3, steps)
+HP_ped_speed = [2.5]
+HP_socForcePersonPerson_k =       [4.9]
+HP_socForcePersonPerson_lyambda = [1.]
+HP_socForcePersonPerson_A =       [12.]
+HP_socForcePersonPerson_B =       [0.64]
+HP_socForcePersonPerson_d =       [0.26]
 
 
 
@@ -59,7 +59,7 @@ for ped_speed in HP_ped_speed:
                             # vp.param.betta = s_betta
                             vp.param.generateMatrices()
 
-                            validator = Validator(validation_param = vp,sfm = sfm, dataloader = dl, do_vis = True)
+                            validator = Validator(validation_param = vp,sfm = sfm, dataloader = dl, do_vis = False)
                             hparams = {
                                 "ped_speed": ped_speed,
                                 "s_k": s_k,
