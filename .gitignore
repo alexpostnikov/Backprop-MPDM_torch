@@ -6,6 +6,7 @@ __pycache__/*
 .vscode/*
 logs/*
 .ipynb_checkpoints/*
-*.log
 *.pyc
 *.bag
+*hp_tuning*
+*log*
