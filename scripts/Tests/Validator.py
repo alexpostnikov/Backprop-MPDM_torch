@@ -22,6 +22,10 @@ def calc_linear_covariance(x):
                 peds[ped[0]] = {"pose": [], "start_step": step}
             peds[ped[0]]["pose"].append(ped[1:])
             peds[ped[0]].update({"end_step": step})
+    # rm peds with only 1 pose
+    for ped in peds:       
+        if len(peds[ped]["pose"])<2:
+            del peds[ped]
     # find vel
     for ped in peds:
         peds[ped]["pose"] = np.array(peds[ped]["pose"])
