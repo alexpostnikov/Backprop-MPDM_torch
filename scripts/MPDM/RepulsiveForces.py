@@ -104,7 +104,7 @@ class RepulsiveForces():
         alpha[0,:] = self.param.socForceRobotPerson["A"]
         alpha[:,0] = self.param.socForceRobotPerson["A"]
 
-        state_concated = state.clone().matmul(self.aux1.double())
+        state_concated = state.clone().matmul(self.aux1)
         # state_concated_t = torch.randn((5,10))
 
         state_concated_t = state.reshape(1, -1)
@@ -125,7 +125,7 @@ class RepulsiveForces():
         # sqrt(delta_x**2 +delta_y**2) -> distance
         # TODO: otherwise  when doing backprop: sqrt(0)' -> nan
         # dist_squared += 0.0000001
-        dist = (dist_squared.matmul(self.aux.double()))
+        dist = (dist_squared.matmul(self.aux))
         # aka distance
         temp = torch.eye(dist.shape[0])
         if self.device is not None:
@@ -140,7 +140,7 @@ class RepulsiveForces():
 
         # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
 
-        velocity_state_concated = velocity_state.clone().matmul(self.aux1.double())
+        velocity_state_concated = velocity_state.clone().matmul(self.aux1)
 
         velocity_atan = torch.atan2(
             velocity_state_concated[:, self.uneven_indexes], velocity_state_concated[:, self.even_indexes])
@@ -152,10 +152,10 @@ class RepulsiveForces():
                math.pi) % (2*math.pi) - math.pi
 
         anisotropy = param_lambda + (1 - param_lambda)*(1+torch.cos(phi))/2.
-        anisotropy = anisotropy.matmul(self.auxullary.double())
+        anisotropy = anisotropy.matmul(self.auxullary)
         force = force_amplitude.matmul(
-            self.auxullary.double())*(delta_pose / (dist).matmul(self.auxullary.double())) * anisotropy
+            self.auxullary)*(delta_pose / (dist).matmul(self.auxullary)) * anisotropy
 
-        force = (force * ((self.auxullary.double() - 1) * -1))
-        force = force.matmul(self.aux2.double())
+        force = (force * ((self.auxullary - 1) * -1))
+        force = force.matmul(self.aux2)
         return force

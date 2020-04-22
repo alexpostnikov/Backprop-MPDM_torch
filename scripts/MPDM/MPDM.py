@@ -3,10 +3,12 @@ import torch.nn as nn
 import torch
 import numpy as np
 import math
+# TODO: that ROS part woldn`t need to be here
+from Utils.Visualizer2 import Visualizer2
 
 
 class MPDM:
-    def __init__(self, param, sfm, policys=None):
+    def __init__(self, param, sfm, policys=None, visualize=False):
         self.param = param
         self.map = None
         self.goals = None
@@ -16,28 +18,40 @@ class MPDM:
         self.path = None
         self.states = None
         ###### MODEL CREATING ######
-        for i in range(0, self.param.number_of_layers):
+        for _ in range(self.param.number_of_layers):
             self.modules.append(Linear(self.sfm))
         self.sequential = nn.Sequential(*self.modules)
+
+       # TODO: that ROS part woldn`t need to be here
+        self.visualize = visualize
+
+        self.pedestrians_visualizer = Visualizer2("peds", starting_id=1)
+        self.initial_pedestrians_visualizer = Visualizer2("peds_initial", color=3, size=[
+            0.6/3, 0.6/3, 1.8/3], with_text=False)
+        self.ped_goals_visualizer = Visualizer2(
+            "goals/ped", size=[0.1, 0.1, 0.5])
+        self.initial_ped_goals_visualizer = Visualizer2(
+            "goals/init_ped", size=[0.05, 0.05, 0.25], color=3, with_text=True)
+        self.robot_visualizer = Visualizer2("robot", color=1, with_text=False)
+        self.policy_visualizer = Visualizer2(
+            "robot_policy", color=1,  with_text=False)
+        self.learning_vis = Visualizer2(
+            "peds/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
+        # TODO: that ROS part woldn`t need to be here
 
     def is_init(self):
         return self.states is not None
 
     def update_state(self, robot, peds, robot_goal, peds_goals, map=None):
         try:
-            states = []
-            goals = []
             self.map = map
-            states.append(robot)
-            goals.append(robot_goal)
+            states = [robot]
+            goals = [robot_goal]
             for i in range(len(peds)):
                 states.append(peds[i])
-                goals.append(goals[i])
-            states = np.array(states)
-            goals = np.array(goals)
-            self.goals = torch.from_numpy(goals)
-            self.states = torch.from_numpy(states)
-            # TODO: convert to tensor
+                goals.append(peds_goals[i])
+            self.goals = torch.Tensor(goals)
+            self.states = torch.Tensor(states)
         except:
             self.states = None
         # [
@@ -48,13 +62,16 @@ class MPDM:
         # ]
 
     def predict(self, epoch=20):
+
         # TODO: try to work without 0) policys 1) map 2) goals 3) peds
         # only for test
         # self.robot =
         # only for test
 
-        cost, states = self.optimize(epoch)
-        self.path = None # TODO: fix it
+        cost, array_path = self.optimize(epoch)
+        self.path = array_path
+
+        # self.path = None  # TODO: fix it
         return True
 
     def get_robot_path(self,):
@@ -75,24 +92,26 @@ class MPDM:
             goals = self.goals[:, :2].clone().detach()
             goals.requires_grad_(True)
             robot_init_pose = inner_data[0, 0:2]
-            stacked_trajectories_for_visualizer = None  # ???
             ### FORWARD PASS ####
             cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
-            # goal_prob[0] = 1. # what?
-            _, cost, stacked_trajectories_for_visualizer, _, _, _ = self.sequential(
-                (inner_data, cost, stacked_trajectories_for_visualizer, goals, robot_init_pose, self.policys))
+            goal_prob[0] = 1.  # what?
+            stacked_trajectories = None
+            _, cost, stacked_trajectories, _, _, _ = self.sequential(
+                (inner_data, cost, stacked_trajectories, goals, robot_init_pose, self.policys))
 
             # print (goals)
             #### VISUALIZE ####
-            # if param.do_visualization and None not in [ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer]:
-            #     ped_goals_visualizer.publish(goals)
-            #     # initial_pedestrians_visualizer.publish(observed_state)
-            #     pedestrians_visualizer.publish(starting_poses[1:])
-            #     robot_visualizer.publish(starting_poses[0:1])
-            #     learning_vis.publish(stacked_trajectories_for_visualizer)
-            #     initial_ped_goals_visualizer.publish(param.goal)
+            # TODO: that ROS part woldn`t need to be here
+            if self.visualize:
+                self.ped_goals_visualizer.publish(goals)
+                # initial_pedestrians_visualizer.publish(observed_state)
+                self.pedestrians_visualizer.publish(inner_data[1:])
+                self.robot_visualizer.publish(inner_data[0:1])
+                self.learning_vis.publish(stacked_trajectories)
+                self.initial_ped_goals_visualizer.publish(self.goals[:, :2])
+            # TODO: that ROS part woldn`t need to be here
 
             #### CALC GRAD ####
 
@@ -102,7 +121,8 @@ class MPDM:
             total_cost = prob_cost.sum().item()
             if total_cost > max_cost:
                 max_cost = total_cost
-                max_cost_state = inner_data.clone().detach()
+                max_cost_path = stacked_trajectories.clone().detach(
+                )[::len(inner_data)]  # <== only robot positions+forces
             gradient = inner_data.grad
             gradient[0, :] *= 0
 
@@ -130,7 +150,7 @@ class MPDM:
                 inner_data.grad.data.zero_()
             # if starting_poses.grad is not None:
             #     starting_poses.grad.data.zero_()
-        return max_cost, max_cost_state
+        return max_cost, max_cost_path
 
     def get_probability(self, inner_data, goals, param):
 

@@ -53,7 +53,7 @@ if __name__ == '__main__':
     # goal[x=0,y=0,yaw=0]
     peds.poses.append(p(2,2))
     peds.poses.append(p(0.5,0))
-    peds.poses.append(p(0,0))
+    peds.poses.append(p(3,3))
     # 2
     peds.poses.append(p(2,1))
     peds.poses.append(p(0.5,0))
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     # 3
     peds.poses.append(p(1.5,1.5))
     peds.poses.append(p(0.5,0))
-    peds.poses.append(p(0,0))
+    peds.poses.append(p(5,3))
 
 
     while not (rospy.is_shutdown()):

@@ -3,6 +3,7 @@ import rospy
 from Param import ROS_Param
 from Utils.RosPubSub import RosPubSub
 from Utils.Visualizer2 import Visualizer2
+from Utils.Utils import array_to_ros_path
 from MPDM.SFM import SFM
 from MPDM.RepulsiveForces import RepulsiveForces
 from MPDM.MPDM import MPDM
@@ -16,7 +17,7 @@ if __name__ == '__main__':
     param = ROS_Param()
     rep_f = RepulsiveForces(param)
     sfm = SFM(rep_f, param)
-    mpdm = MPDM(param, sfm)
+    mpdm = MPDM(param, sfm, visualize=True) # visualize only for debugging
     map = ps.map.update_static_map()
     rospy.sleep(1.0)
     while not (rospy.is_shutdown()):
@@ -27,7 +28,6 @@ if __name__ == '__main__':
             break
         rospy.sleep(1.0)
         rospy.loginfo("no data of robot_state or peds_state")
-
     rospy.loginfo("mpdm is initialized")
 
     while not (rospy.is_shutdown()):
@@ -37,8 +37,8 @@ if __name__ == '__main__':
 
         mpdm.update_state(robot, peds, path[-1], goals, map)
         mpdm.predict(epoch=10)
-        path = mpdm.get_robot_path()
-
+        array_path = mpdm.get_robot_path()
+        path = array_to_ros_path(array_path)
         ps.path.publish(path)
         print("average time: ", time.time() - start)
         # rospy.sleep(0.1)
