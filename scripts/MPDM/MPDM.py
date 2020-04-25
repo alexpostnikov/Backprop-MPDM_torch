@@ -83,17 +83,13 @@ class MPDM:
 
         for epoch_numb in range(0, epochs):
             max_cost = -math.inf
-            # inner_data = self.states.clone().detach()  # TODO: why copy and detach twice ?
-            # inner_data = np.append(inner_data[:,:2],inner_data[:,3:5], axis=1)
-            # luti pizdec
-            inner_data = torch.from_numpy(np.append(self.states[:, :2].clone().detach(
-            ), self.states[:, 3:5].clone().detach(), axis=1)).clone().detach()
+            inner_data = self.states.clone().detach()
             inner_data.requires_grad_(True)
-            goals = self.goals[:, :2].clone().detach()
+            goals = self.goals.clone().detach()
             goals.requires_grad_(True)
-            robot_init_pose = inner_data[0, 0:2]
+            robot_init_pose = inner_data[0]
             ### FORWARD PASS ####
-            cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
+            cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
             goal_prob[0] = 1.  # what?
