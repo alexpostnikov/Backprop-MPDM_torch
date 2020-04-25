@@ -11,11 +11,12 @@ class SFM:
         DT = self.param.DT
         ps = self.param.pedestrians_speed
         rs = self.param.robot_speed
-        vx_vy_uncl = state[:, 2:4] + (force*DT)
-        dx_dy = state[:, 2:4]*DT + (force*(DT**2))*0.5
+        vx_vy_vyaw_uncl = state[:, 3:] + (force*DT)
+        dx_dy_dyaw = state[:, 3:]*DT + (force*(DT**2))*0.5
 
         # //apply constrains:
         # torch.sqrt(vx_vy[:,0:1]**2 + vx_vy[:,1:2]**2)
+
         pose_prop_v_unclamped = vx_vy_uncl.norm(dim=1)
         pose_prop_v = torch.clamp(pose_prop_v_unclamped, min=-ps, max=ps)
         pose_prop_v[0] = torch.clamp(pose_prop_v_unclamped[0], min=-rs, max=rs)
@@ -62,7 +63,7 @@ class SFM:
 
     def calc_forces(self, state, goals):
         rep_force = self.rep_f.calc_rep_forces(
-            state[:, 0:2], state[:, 2:4], param_lambda=1)
+            state[:, 0:2], state[:, 3:5], param_lambda=1)
         # rep_force[0] = 0*rep_force[0]
         attr_force = self.force_goal(state, goals)
         return rep_force, attr_force
@@ -75,11 +76,11 @@ class SFM:
 
         ps = self.param.pedestrians_speed
         rs = self.param.robot_speed
-        v_desired_x_y = goal[:, 0:2] - input_state[:, 0:2]
-        v_desired_ = torch.sqrt(v_desired_x_y.clone(
-        )[:, 0:1]**2 + v_desired_x_y.clone()[:, 1:2]**2)
-        v_desired_x_y[1:-1, :] *= ps / v_desired_[1:-1, :]
-        v_desired_x_y[0, :] *= rs / v_desired_[0, :]
+        v_desired_x_y_yaw = goal[:, 0:3] - input_state[:, 0:3]
+        v_desired_ = torch.sqrt(v_desired_x_y_yaw.clone(
+        )[:, 0:1]**2 + v_desired_x_y_yaw.clone()[:, 1:2]**2 + v_desired_x_y_yaw.clone()[:, 2:3]**2)
+        v_desired_x_y_yaw[1:] *= ps / v_desired_[1:]
+        v_desired_x_y_yaw[0] *= rs / v_desired_[0]
         # print (pedestrians_speed)
-        F_attr = k * (v_desired_x_y - input_state[:, 2:4])
+        F_attr = k * (v_desired_x_y_yaw - input_state[:, 3:])
         return F_attr

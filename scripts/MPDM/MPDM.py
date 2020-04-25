@@ -92,8 +92,8 @@ class MPDM:
             cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
-            goal_prob[0] = 1.  # what?
-            stacked_trajectories = None
+            goal_prob[0] = 1. # robot goal
+            stacked_trajectories = inner_data.clone()
             _, cost, stacked_trajectories, _, _, _ = self.sequential(
                 (inner_data, cost, stacked_trajectories, goals, robot_init_pose, self.policys))
 

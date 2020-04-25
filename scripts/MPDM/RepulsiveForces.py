@@ -100,9 +100,10 @@ class RepulsiveForces():
             torch.ones(num_ped+1, num_ped+1)
         betta[0, :] = self.param.socForceRobotPerson["B"]
         betta[:, 0] = self.param.socForceRobotPerson["B"]
-        alpha = self.param.socForcePersonPerson["A"] * (1 - torch.eye(self.num_ped+1,self.num_ped+1))
-        alpha[0,:] = self.param.socForceRobotPerson["A"]
-        alpha[:,0] = self.param.socForceRobotPerson["A"]
+        alpha = self.param.socForcePersonPerson["A"] * \
+            (1 - torch.eye(self.num_ped+1, self.num_ped+1))
+        alpha[0, :] = self.param.socForceRobotPerson["A"]
+        alpha[:, 0] = self.param.socForceRobotPerson["A"]
 
         state_concated = state.clone().matmul(self.aux1)
         # state_concated_t = torch.randn((5,10))
@@ -158,4 +159,6 @@ class RepulsiveForces():
 
         force = (force * ((self.auxullary - 1) * -1))
         force = force.matmul(self.aux2)
+        yaw_zeros = torch.zeros(len(force), 1)
+        force = torch.cat((force, yaw_zeros), dim=1)
         return force
