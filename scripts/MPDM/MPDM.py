@@ -152,29 +152,40 @@ class MPDM:
 
         # pose
         num_ped = len(inner_data)  # -1
-        input_state_std = param.pose_std_coef * torch.rand((num_ped, 4))
-        input_state_std[:, 2:4] = param.velocity_std_coef * \
-            torch.rand((num_ped, 2))
+        data_shape = len(inner_data[0])
+        vel_shape = int(data_shape/2)
+        pose_shape = vel_shape
+
+        input_state_std = param.pose_std_coef * \
+            torch.rand((num_ped, data_shape))
+        input_state_std[:, pose_shape:(pose_shape+vel_shape)] = param.velocity_std_coef * \
+            torch.rand((num_ped, vel_shape))
         agents_pose_distrib = torch.distributions.normal.Normal(
             inner_data, input_state_std)
-        index_X, index_Y = 0, 1
+
+        # position
+        index_X, index_Y, index_YAW = 0, 1, 2
         probability = torch.exp(agents_pose_distrib.log_prob(
             inner_data)) * torch.sqrt(2 * math.pi * agents_pose_distrib.stddev**2)
-        probability_ = 0.5*(probability[:, index_X] + probability[:, index_Y])
+        probability_ = 0.5 * \
+            (probability[:, index_X] + probability[:,
+                                                   index_Y] + probability[:, index_YAW])
         probability_matrix = probability_.view(-1, 1).requires_grad_(True)
         # velocity
-        index_X, index_Y = 2, 3
-        probability_ = 0.5*(probability[:, index_X] + probability[:, index_Y])
+        index_VX, index_VY, index_VYAW = 3, 4, 5
+        probability_ = 0.5 * \
+            (probability[:, index_VX] + probability[:,
+                                                    index_VY] + probability[:, index_VYAW])
         vel_prob = probability_.view(-1, 1).requires_grad_(True)
-
         # goal
-        goal_std = param.goal_std_coef * torch.rand((num_ped, 2))
+        goal_std = param.goal_std_coef * torch.rand((num_ped, pose_shape))
         goal_distrib = torch.distributions.normal.Normal(goals, goal_std)
-        index_X, index_Y = 0, 1
+        index_X, index_Y, index_YAW = 0, 1, 2
         probability = torch.exp(goal_distrib.log_prob(
             goals)) * torch.sqrt(2 * math.pi * goal_distrib.stddev**2)
-        probability_ = 0.5*(probability[:, index_X] + probability[:, index_Y])
+        probability_ = 0.5 * \
+            (probability[:, index_X] + probability[:,
+                                                   index_Y] + probability[:, index_YAW])
         goal_prob = probability_.view(-1, 1).requires_grad_(True)
 
-        agents_pose_distrib
         return probability_matrix, goal_prob, vel_prob
