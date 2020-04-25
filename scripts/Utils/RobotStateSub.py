@@ -2,7 +2,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Path
-# from tf.transformations import euler_from_quaternion
+from Utils.Utils import quaternion_to_euler
 import numpy as np
 
 
@@ -26,8 +26,11 @@ class RobotStateSub:
     def callback_path(self, msg):
         self.path= []
         for p in msg.poses:
-            # TODO: extract angle
-            yaw = 0
+            _, _, yaw = quaternion_to_euler(
+            p.pose.orientation.x,
+            p.pose.orientation.y,
+            p.pose.orientation.z,
+            p.pose.orientation.w)
             point = [p.pose.position.x, p.pose.position.y, yaw]
             self.path.append(point)
         self.path = np.array(self.path)
@@ -37,15 +40,13 @@ class RobotStateSub:
         # TODO: extract goal
 
     def callback_pose(self, msg):
-        quaternion = (
+        _, _, yaw = quaternion_to_euler(
             msg.pose.orientation.x,
             msg.pose.orientation.y,
             msg.pose.orientation.z,
             msg.pose.orientation.w)
         x = msg.pose.position.x
         y = msg.pose.position.y
-        yaw = 0  # TODO: fix from tf.transformations import euler_from_quaternion
-        # yaw = euler_from_quaternion(quaternion)[2]
         self.pose[:] = x, y, yaw
         self.robot[:3] = self.pose[:]
 
