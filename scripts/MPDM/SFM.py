@@ -11,11 +11,13 @@ class SFM:
         DT = self.param.DT
         ps = self.param.pedestrians_speed
         rs = self.param.robot_speed
-        vx_vy_vyaw_uncl = state[:, 3:] + (force*DT)
-        dx_dy_dyaw = state[:, 3:]*DT + (force*(DT**2))*0.5
+        vx_vy_uncl = state[:, 3:5] + (force[:,:2]*DT)
+        dx_dy = state[:, 3:5]*DT + (force[:,:2]*(DT**2))*0.5
 
         # //apply constrains:
         # torch.sqrt(vx_vy[:,0:1]**2 + vx_vy[:,1:2]**2)
+        
+        # TODO: switch moving model
 
         pose_prop_v_unclamped = vx_vy_uncl.norm(dim=1)
         pose_prop_v = torch.clamp(pose_prop_v_unclamped, min=-ps, max=ps)
@@ -30,24 +32,24 @@ class SFM:
         bb = (dx_dy.t()*mask).t()
         dx_dy = dx_dy.clone() - (bb * aa)
         state[:, 0:2] = state[:, 0:2].clone() + dx_dy
-
-        state[:, 2:4] = vx_vy
+        state[:, 3:5] = vx_vy
+        # TODO: add angle propagation
         return state
 
-    def calc_cost_function(self, goal, init_pose, agents_pose, policy=None):
+    def calc_cost_function(self, robot_goal, robot_init_pose, agents_pose, policy=None):
         a = self.param.a
         b = self.param.b
         e = self.param.e
-        robot_pose = agents_pose[0, 0:2].clone()
-        robot_speed = agents_pose[0, 2:4].clone()
-        PG = (robot_pose - init_pose).dot((-init_pose +
-                                           goal[0])/torch.norm(-init_pose+goal[0]))
+        robot_pose = agents_pose[0, :3].clone()
+        robot_speed = agents_pose[0, 3:].clone()
+        PG = (robot_pose - robot_init_pose).dot((-robot_init_pose +
+                                           robot_goal)/torch.norm(-robot_init_pose+robot_goal))
         # Blame
         # PG = torch.clamp(PG, max = 0.5)
         B = torch.zeros(len(agents_pose), 1, requires_grad=False)
         # if torch.norm(robot_speed) > e:
-        agents_speed = agents_pose[:, 0:2]
-        delta = agents_speed - robot_pose
+        agents_speed = agents_pose[:, :2] # why it named agents_speed?
+        delta = agents_speed - robot_pose[:2]
         norm = -torch.norm(delta, dim=1)/b
         B = torch.exp(norm)  # +0.5
         # Overall Cost

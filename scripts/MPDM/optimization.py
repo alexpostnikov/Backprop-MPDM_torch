@@ -38,7 +38,7 @@ class Linear(nn.Module):
         rf, af = self.sfm.calc_forces(state, goals)
         F = rf + af
         out = self.sfm.pose_propagation(F, state.clone())
-        temp = self.sfm.calc_cost_function(goals, robot_init_pose, out, policy)
+        temp = self.sfm.calc_cost_function(goals[0], robot_init_pose, out, policy)
         new_cost = cost + (temp.view(-1, 1))
         stacked_trajectories_for_visualizer = torch.cat(
             (stacked_trajectories_for_visualizer, state.clone()))

@@ -87,9 +87,10 @@ class MPDM:
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
             goals.requires_grad_(True)
-            robot_init_pose = inner_data[0]
+            robot_init_pose = inner_data[0,:3]
             ### FORWARD PASS ####
-            cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
+            # cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
+            cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
             goal_prob[0] = 1. # robot goal
