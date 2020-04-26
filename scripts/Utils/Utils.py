@@ -1,7 +1,9 @@
 import torch
 import logging
 from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped, PoseArray, Pose, Twist
+from geometry_msgs.msg import PoseStamped, PoseArray, Pose, Twist, Quaternion
+import numpy as np
+import math
 
 
 def ps(x, y, yaw=0, frame="map"):
@@ -36,13 +38,22 @@ def array_to_ros_path(array, frame_id="map"):
     return path
 
 def euler_to_quaternion(yaw, pitch, roll):
-
         qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
         qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
         qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
         qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-
         return [qx, qy, qz, qw]
+
+def yaw2q(yaw):
+    # conver yaw angle to quaternion msg 
+    return Quaternion(x=0, y=0, z=np.sin(yaw/2), w=np.cos(yaw/2))
+
+def q2yaw(q):
+    # conver quaternion msg to yaw angle
+    t3 = +2.0 * (q.w * q.z + q.x * q.y)
+    t4 = +1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+    return math.degrees(math.atan2(t3, t4))
+
 
 def quaternion_to_euler(x, y, z, w):
 

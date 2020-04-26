@@ -2,7 +2,7 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, Twist
 from nav_msgs.msg import Path
-from Utils.Utils import quaternion_to_euler
+from Utils.Utils import q2yaw
 import numpy as np
 
 
@@ -24,13 +24,9 @@ class RobotStateSub:
             topic_speed, Twist, self.callback_twist, queue_size=1)
 
     def callback_path(self, msg):
-        self.path= []
+        self.path = []
         for p in msg.poses:
-            _, _, yaw = quaternion_to_euler(
-            p.pose.orientation.x,
-            p.pose.orientation.y,
-            p.pose.orientation.z,
-            p.pose.orientation.w)
+            yaw = q2yaw(p.pose.orientation)
             point = [p.pose.position.x, p.pose.position.y, yaw]
             self.path.append(point)
         self.path = np.array(self.path)
@@ -40,11 +36,7 @@ class RobotStateSub:
         # TODO: extract goal
 
     def callback_pose(self, msg):
-        _, _, yaw = quaternion_to_euler(
-            msg.pose.orientation.x,
-            msg.pose.orientation.y,
-            msg.pose.orientation.z,
-            msg.pose.orientation.w)
+        yaw = q2yaw(msg.pose.orientation)
         x = msg.pose.position.x
         y = msg.pose.position.y
         self.pose[:] = x, y, yaw

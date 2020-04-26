@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import math
 # TODO: that ROS part woldn`t need to be here
-from Utils.Visualizer2 import Visualizer2
+from Utils.Visualizer3 import Visualizer3
 
 
 class MPDM:
@@ -25,17 +25,17 @@ class MPDM:
        # TODO: that ROS part woldn`t need to be here
         self.visualize = visualize
 
-        self.pedestrians_visualizer = Visualizer2("peds", starting_id=1)
-        self.initial_pedestrians_visualizer = Visualizer2("peds_initial", color=3, size=[
+        self.pedestrians_visualizer = Visualizer3("peds", starting_id=1)
+        self.initial_pedestrians_visualizer = Visualizer3("peds_initial", color=3, size=[
             0.6/3, 0.6/3, 1.8/3], with_text=False)
-        self.ped_goals_visualizer = Visualizer2(
+        self.ped_goals_visualizer = Visualizer3(
             "goals/ped", size=[0.1, 0.1, 0.5])
-        self.initial_ped_goals_visualizer = Visualizer2(
+        self.initial_ped_goals_visualizer = Visualizer3(
             "goals/init_ped", size=[0.05, 0.05, 0.25], color=3, with_text=True)
-        self.robot_visualizer = Visualizer2("robot", color=1, with_text=False)
-        self.policy_visualizer = Visualizer2(
+        self.robot_visualizer = Visualizer3("robot", color=1, with_text=False)
+        self.policy_visualizer = Visualizer3(
             "robot_policy", color=1,  with_text=False)
-        self.learning_vis = Visualizer2(
+        self.learning_vis = Visualizer3(
             "peds/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
         # TODO: that ROS part woldn`t need to be here
 
@@ -102,12 +102,12 @@ class MPDM:
             #### VISUALIZE ####
             # TODO: that ROS part woldn`t need to be here
             if self.visualize:
-                self.ped_goals_visualizer.publish(goals)
+                self.ped_goals_visualizer.publish(goals.clone().detach())
                 # initial_pedestrians_visualizer.publish(observed_state)
-                self.pedestrians_visualizer.publish(inner_data[1:])
-                self.robot_visualizer.publish(inner_data[0:1])
-                self.learning_vis.publish(stacked_trajectories)
-                self.initial_ped_goals_visualizer.publish(self.goals[:, :2])
+                self.pedestrians_visualizer.publish(inner_data[1:].clone().detach())
+                self.robot_visualizer.publish(inner_data[0:1].clone().detach())
+                self.learning_vis.publish(stacked_trajectories.clone().detach())
+                self.initial_ped_goals_visualizer.publish(self.goals.clone().detach())
             # TODO: that ROS part woldn`t need to be here
 
             #### CALC GRAD ####

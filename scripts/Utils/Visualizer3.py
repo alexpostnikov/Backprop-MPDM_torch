@@ -2,10 +2,11 @@ import rospy
 import time
 from visualization_msgs.msg import MarkerArray, Marker
 from std_msgs.msg import ColorRGBA
-from geometry_msgs.msg import Point, Pose, Vector3, PointStamped, PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import Point, Pose, Vector3, PointStamped, PoseStamped, PoseWithCovarianceStamped, Quaternion
+import numpy as np
 
-class Visualizer2:
 
+class Visualizer3:
     def __init__(self,  topic_name='/visualizer2', frame_id="/world", color=0, size=[0.6, 0.6, 1.8], with_text=True, starting_id=0, mesh_resource=None, mesh_scale=None):
         self.publisher = rospy.Publisher(topic_name, MarkerArray, queue_size=0)
         self.frame_id = frame_id
@@ -39,11 +40,14 @@ class Visualizer2:
         ]
         pass
 
+    def yaw2q(self, yaw):
+        return Quaternion(x=0, y=0, z=np.sin(yaw/2), w=np.cos(yaw/2))
+
     def publish(self, data, text=None):
 
-        # [ [x,y,x1,y1,x2,y2]
-        #   [x,y,x1,y1]
-        #   [x,y,x1,y1,x2,y2,x3,y3,...]
+        # [ [x,y,yaw,x1,y1,yaw1,x2,y2,yaw2,...],
+        #   [x,y,yaw,x1,y1,yaw1,x2,y2,yaw2,...]
+        #   ...
         # ]
         # x,y - coord of point
         # xn,yn - n forces
@@ -58,7 +62,7 @@ class Visualizer2:
             pose.position.x = agent[0]
             pose.position.y = agent[1]
             pose.position.z = self.point_scale.z/1.5
-            pose.orientation.w = 1
+            pose.orientation = self.yaw2q(agent[2])
 
             point_marker = Marker(
                 id=id,
@@ -68,11 +72,12 @@ class Visualizer2:
                 color=self.point_color,  # 0 - point color
                 pose=pose
             )
-            if len(agent) < 3:
+            if len(agent) < 4:
                 point_marker.type = Marker.CUBE
             if self.mesh_resource is not None:
                 point_marker.type = Marker.MESH_RESOURCE
-                point_marker.mesh_resource = "package://mpdm/resource/mesh/"+self.mesh_resource  # "robot2.stl"
+                point_marker.mesh_resource = "package://mpdm/resource/mesh/" + \
+                    self.mesh_resource  # "robot2.stl"
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)
@@ -99,7 +104,7 @@ class Visualizer2:
                 id += 1
                 markerArray.markers.append(text_marker)
 
-            forces = agent[2:]
+            forces = agent[3:]
             f_num = 0
             first_arrow = True
             while len(forces > 0):
@@ -123,5 +128,5 @@ class Visualizer2:
                 markerArray.markers.append(arrow)
                 id += 1
                 f_num += 1
-                forces = forces[2:]
+                forces = forces[3:]
         self.publisher.publish(markerArray)

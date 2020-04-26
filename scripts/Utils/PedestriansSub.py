@@ -1,6 +1,6 @@
 import rospy
 from geometry_msgs.msg import PoseArray
-from Utils.Utils import quaternion_to_euler
+from Utils.Utils import q2yaw
 import numpy as np
 
 
@@ -17,26 +17,14 @@ class PedestriansSub:
         for i in range(0, len(msg.poses), 3):
             x = msg.poses[i].position.x
             y = msg.poses[i].position.y
-            _, _, yaw = quaternion_to_euler(
-                msg.poses[i].orientation.x,
-                msg.poses[i].orientation.y,
-                msg.poses[i].orientation.z,
-                msg.poses[i].orientation.w)
+            yaw = q2yaw(msg.poses[i].orientation)
             vx = msg.poses[i+1].position.x
             vy = msg.poses[i+1].position.y
-            _, _, vyaw = quaternion_to_euler(
-                msg.poses[i+1].orientation.x,
-                msg.poses[i+1].orientation.y,
-                msg.poses[i+1].orientation.z,
-                msg.poses[i+1].orientation.w)
+            vyaw = q2yaw(msg.poses[i+1].orientation)
             peds.append([x, y, yaw, vx, vy, vyaw])
             gx = msg.poses[i+2].position.x
             gy = msg.poses[i+2].position.y
-            _, _, gyaw = quaternion_to_euler(
-                msg.poses[i+2].orientation.x,
-                msg.poses[i+2].orientation.y,
-                msg.poses[i+2].orientation.z,
-                msg.poses[i+2].orientation.w)
+            gyaw = q2yaw(msg.poses[i+2].orientation)
             goals.append([gx, gy, gyaw])
         self.peds = np.array(peds)
         self.goals = np.array(goals)

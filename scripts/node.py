@@ -2,7 +2,7 @@
 import rospy
 from Param import ROS_Param
 from Utils.RosPubSub import RosPubSub
-from Utils.Visualizer2 import Visualizer2
+# from Utils.Visualizer2 import Visualizer2
 from Utils.Utils import array_to_ros_path
 from MPDM.SFM import SFM
 from MPDM.RepulsiveForces import RepulsiveForces
