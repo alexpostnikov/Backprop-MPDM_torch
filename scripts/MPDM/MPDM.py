@@ -25,18 +25,18 @@ class MPDM:
        # TODO: that ROS part woldn`t need to be here
         self.visualize = visualize
 
-        self.pedestrians_visualizer = Visualizer3("peds", starting_id=1)
-        self.initial_pedestrians_visualizer = Visualizer3("peds_initial", color=3, size=[
+        self.pedestrians_visualizer = Visualizer3("mpdm/peds", starting_id=1)
+        self.initial_pedestrians_visualizer = Visualizer3("mpdm/peds_initial", color=3, size=[
             0.6/3, 0.6/3, 1.8/3], with_text=False)
         self.ped_goals_visualizer = Visualizer3(
-            "goals/ped", size=[0.1, 0.1, 0.5])
+            "mpdm/goals", size=[0.1, 0.1, 0.5])
         self.initial_ped_goals_visualizer = Visualizer3(
-            "goals/init_ped", size=[0.05, 0.05, 0.25], color=3, with_text=True)
-        self.robot_visualizer = Visualizer3("robot", color=1, with_text=False)
+            "mpdm/goals_initial", size=[0.05, 0.05, 0.25], color=3, with_text=True)
+        self.robot_visualizer = Visualizer3("mpdm/robot", color=1, with_text=False)
         self.policy_visualizer = Visualizer3(
-            "robot_policy", color=1,  with_text=False)
+            "mpdm/robot_policy", color=1,  with_text=False)
         self.learning_vis = Visualizer3(
-            "peds/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
+            "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
         # TODO: that ROS part woldn`t need to be here
 
     def is_init(self):
