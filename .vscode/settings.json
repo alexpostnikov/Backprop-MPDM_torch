@@ -8,5 +8,6 @@
         "/home/pazuzu/catkin_ws/src/Backprop-MPDM_torch/"
     ],
     "python.pythonPath": "/home/robot/miniconda3/envs/bonsai/bin/python",
-    "python.dataScience.debugJustMyCode": false
+    "python.dataScience.debugJustMyCode": false,
+    "cmake.configureOnOpen": false
 }
