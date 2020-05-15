@@ -11,3 +11,4 @@ logs/*
 *.pyc
 *log*
 *.npz
+validation_result.txt
