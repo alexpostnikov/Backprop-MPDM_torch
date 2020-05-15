@@ -1,7 +1,7 @@
 import torch
 
 class Param:
-    def __init__(self,device = None, num_ped=10):
+    def __init__(self,device = None, num_ped=5):
         self.device = device
         # ros
         self.loop_rate = 30.
@@ -9,14 +9,13 @@ class Param:
         
         
         self.num_ped = num_ped
-        self.optim_epochs = 1
+        self.optim_epochs = 4
         self.number_of_layers = 10
 
         # DISCTIB COEFFICIENTS
         self.goal_std_coef = 4.5
         self.pose_std_coef = 1.0
         self.velocity_std_coef = 2.0
-
 
         self.do_visualization = 1
         self.do_logging = 0
@@ -30,14 +29,14 @@ class Param:
         self.k = 2.3
         self.DT = 0.2
         self.alpha = 10.66
-        
+
         self.ped_mass = 60
         self.betta = 0.71
 
         # social force params
         self.socForceRobotPerson = {"k":2.3, "lambda":0.59, "A":3.66, "B":0.79,"d":0.65}
-        # self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":12., "B":0.64,"d":0.26}
-        self.socForcePersonPerson = {"k":5.5, "lambda":1.5, "A":8., "B":0.4,"d":0.01}
+        self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":12., "B":0.64,"d":0.26}
+        # self.socForcePersonPerson = {"k":5.5, "lambda":1.5, "A":8., "B":0.4,"d":0.01}
 
 
         self.a = 0.05

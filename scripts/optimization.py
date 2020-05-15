@@ -34,8 +34,6 @@ class Linear(nn.Module):
         self.param = param
 
     def forward(self, input):
-
-        # input_state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose = input
         state, cost, stacked_trajectories_for_visualizer, goals, param, robot_init_pose, policy = input
         
         # state = 1 * input_state

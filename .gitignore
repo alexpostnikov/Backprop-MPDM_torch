@@ -3,10 +3,11 @@
 scripts/__pycache__/*
 scripts/.vscode/*
 __pycache__/*
-.vscode/*
-logs/*
-.ipynb_checkpoints/*
-*.pyc
-*.bag
 *hp_tuning*
+logs/*
+.vscode/*
+.ipynb_checkpoints/*
+*.bag
+*.pyc
 *log*
+*.npz
