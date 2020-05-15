@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="mpdm" name="fake_publicator" type="fake_publicator.py" required="true" output="screen"></node>  
+    <include file="$(find mpdm)/launch/map_server.launch"/>
+</launch>

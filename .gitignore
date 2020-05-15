@@ -2,12 +2,12 @@
 *__pycache__*
 scripts/__pycache__/*
 scripts/.vscode/*
+*hp_tuning*
+logs/*
 .vscode/*
 .ipynb_checkpoints/*
+*.bag
 *.log
 *.pyc
-
-log/*
+*log*
 *.npz
-
-hp_tuning_1/*
