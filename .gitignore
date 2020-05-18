@@ -12,3 +12,4 @@ logs/*
 *log*
 *.npz
 validation_result.txt
+./build*
