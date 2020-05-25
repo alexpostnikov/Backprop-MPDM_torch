@@ -11,12 +11,13 @@ class MPDM:
     def __init__(self, param, sfm, policys=None, visualize=False):
         self.param = param
         self.map = None
-        self.goals = None
         self.policys = policys
         self.sfm = sfm
         self.modules = []
         self.path = None
+        self.goals = None
         self.states = None
+        self.prev_states = None
         ###### MODEL CREATING ######
         for _ in range(self.param.number_of_layers):
             self.modules.append(Linear(self.sfm))
@@ -45,6 +46,7 @@ class MPDM:
     def update_state(self, robot, peds, robot_goal, peds_goals, map=None):
         try:
             self.map = map
+            self.prev_states = self.states
             states = [robot]
             goals = [robot_goal]
             for i in range(len(peds)):
@@ -72,7 +74,7 @@ class MPDM:
         self.path = array_path
 
         # self.path = None  # TODO: fix it
-        return True
+        return self.path
 
     def get_robot_path(self,):
         return self.path

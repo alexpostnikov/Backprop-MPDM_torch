@@ -34,10 +34,8 @@ if __name__ == '__main__':
         start = time.time()
         robot, path = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
-
         mpdm.update_state(robot, peds, path[-1], goals, map)
-        mpdm.predict(epoch=10)
-        array_path = mpdm.get_robot_path()
+        array_path = mpdm.predict(epoch=10)
         path = array_to_ros_path(array_path)
         ps.path.publish(path)
         print("average time: ", time.time() - start)
