@@ -8,11 +8,12 @@ from Utils.Visualizer3 import Visualizer3
 
 
 class MPDM:
-    def __init__(self, param, sfm, policys=None, visualize=False):
+    def __init__(self, param, sfm, covariance_model= None, visualize=False, policys=None):
         self.param = param
         self.map = None
         self.policys = policys
         self.sfm = sfm
+        self.cpm = covariance_model
         self.modules = []
         self.path = None
         self.goals = None
@@ -72,8 +73,6 @@ class MPDM:
 
         cost, array_path = self.optimize(epoch)
         self.path = array_path
-
-        # self.path = None  # TODO: fix it
         return self.path
 
     def get_robot_path(self,):

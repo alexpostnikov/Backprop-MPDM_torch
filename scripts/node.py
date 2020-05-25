@@ -7,6 +7,7 @@ from Utils.Utils import array_to_ros_path
 from MPDM.SFM import SFM
 from MPDM.RepulsiveForces import RepulsiveForces
 from MPDM.MPDM import MPDM
+from cov_prediction.SigmaNN import SigmaNN
 import time
 # from MPDM.Policy import Policy
 
@@ -17,7 +18,8 @@ if __name__ == '__main__':
     param = ROS_Param()
     rep_f = RepulsiveForces(param)
     sfm = SFM(rep_f, param)
-    mpdm = MPDM(param, sfm, visualize=True) # visualize only for debugging
+    cov_pred_model = SigmaNN()
+    mpdm = MPDM(param, sfm, cov_pred_model, visualize=True)
     map = ps.map.update_static_map()
     rospy.sleep(1.0)
     while not (rospy.is_shutdown()):
