@@ -28,27 +28,38 @@ def get_poses_probability(agents_pose, agents_pose_distrib, index_X=0, index_Y=1
 
 
 class Linear(nn.Module):
-    def __init__(self, sfm):  # input_features, output_features, bias=True):
+    # input_features, output_features, bias=True):
+    def __init__(self, sfm, cpm=None):
         super(Linear, self).__init__()
         self.sfm = sfm
+        self.cpm = cpm
 
     def forward(self, input):
-        state, cost, stacked_trajectories_for_visualizer, goals, robot_init_pose, policy = input
+        # TODO put state(remove) into stacked_state
+        state, cost, stacked_cov, stacked_state, stacked_state_vis, goals, robot_init_pose, policy = input
         # state = 1 * input_state
         rf, af = self.sfm.calc_forces(state, goals)
         F = rf + af
         out = self.sfm.pose_propagation(F, state.clone())
-        temp = self.sfm.calc_cost_function(goals[0], robot_init_pose, out, policy)
+        temp = self.sfm.calc_cost_function(
+            goals[0], robot_init_pose, out, policy)
         new_cost = cost + (temp.view(-1, 1))
-        stacked_trajectories_for_visualizer = torch.cat(
-            (stacked_trajectories_for_visualizer, state.clone()))
+        stacked_state_vis = torch.cat(
+            (stacked_state_vis, state.clone()))
+        stacked_state.append(out.clone())
+        # calculate covariance
+        cov = self.cpm.calc_covariance(
+            stacked_cov[-1], stacked_state[-2][:, :2].detach().numpy(), stacked_state[-1][:, :2].detach().numpy())
+        stacked_cov.append(cov)
 
-        return (out, new_cost, stacked_trajectories_for_visualizer, goals, robot_init_pose, policy)
+        return (out, new_cost, stacked_cov, stacked_state, stacked_state_vis, goals, robot_init_pose, policy)
 
 # class Optimize():
 #     def __init__(self,):
 
 # def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer):
+
+
 def optimize(epochs, model, starting_poses, robot_init_pose, param, goals, lr, ped_goals_visualizer, initial_pedestrians_visualizer, pedestrians_visualizer, robot_visualizer, learning_vis, initial_ped_goals_visualizer, policy=None, do_print=False, device=None):
     for epoch_numb in range(0, epochs):
         if rospy.is_shutdown():

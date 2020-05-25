@@ -5,15 +5,14 @@ import numpy as np
 import math
 # TODO: that ROS part woldn`t need to be here
 from Utils.Visualizer3 import Visualizer3
+from Utils.Visualizer4 import Visualizer4
 
 
 class MPDM:
-    def __init__(self, param, sfm, covariance_model= None, visualize=False, policys=None):
+    def __init__(self, param, sfm, covariance_model=None, visualize=False, policys=None):
         self.param = param
         self.map = None
         self.policys = policys
-        self.sfm = sfm
-        self.cpm = covariance_model
         self.modules = []
         self.path = None
         self.goals = None
@@ -21,7 +20,7 @@ class MPDM:
         self.prev_states = None
         ###### MODEL CREATING ######
         for _ in range(self.param.number_of_layers):
-            self.modules.append(Linear(self.sfm))
+            self.modules.append(Linear(sfm, covariance_model))
         self.sequential = nn.Sequential(*self.modules)
 
        # TODO: that ROS part woldn`t need to be here
@@ -34,11 +33,14 @@ class MPDM:
             "mpdm/goals", size=[0.1, 0.1, 0.5])
         self.initial_ped_goals_visualizer = Visualizer3(
             "mpdm/goals_initial", size=[0.05, 0.05, 0.25], color=3, with_text=True)
-        self.robot_visualizer = Visualizer3("mpdm/robot", color=1, with_text=False)
+        self.robot_visualizer = Visualizer3(
+            "mpdm/robot", color=1, with_text=False)
         self.policy_visualizer = Visualizer3(
             "mpdm/robot_policy", color=1,  with_text=False)
         self.learning_vis = Visualizer3(
             "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
+        self.covariance_vis = Visualizer4(
+            "mpdm/learning_with_covariance", color=4)
         # TODO: that ROS part woldn`t need to be here
 
     def is_init(self):
@@ -88,27 +90,35 @@ class MPDM:
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
             goals.requires_grad_(True)
-            robot_init_pose = inner_data[0,:3]
+            robot_init_pose = inner_data[0, :3]
             ### FORWARD PASS ####
             # cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
             cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
-            goal_prob[0] = 1. # robot goal
-            stacked_trajectories = inner_data.clone()
-            _, cost, stacked_trajectories, _, _, _ = self.sequential(
-                (inner_data, cost, stacked_trajectories, goals, robot_init_pose, self.policys))
+            goal_prob[0] = 1.  # robot goal
+            stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
+            stacked_trajectories = [inner_data.clone()]
+            stacked_trajectories_vis = inner_data.clone()
+            _, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, _, _, _ = self.sequential(
+                (inner_data, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, goals, robot_init_pose, self.policys))
 
             # print (goals)
             #### VISUALIZE ####
             # TODO: that ROS part woldn`t need to be here
             if self.visualize:
+                self.covariance_vis.publish(
+                    stacked_trajectories, stacked_covariance)
                 self.ped_goals_visualizer.publish(goals.clone().detach())
                 # initial_pedestrians_visualizer.publish(observed_state)
-                self.pedestrians_visualizer.publish(inner_data[1:].clone().detach())
+                self.pedestrians_visualizer.publish(
+                    inner_data[1:].clone().detach())
                 self.robot_visualizer.publish(inner_data[0:1].clone().detach())
-                self.learning_vis.publish(stacked_trajectories.clone().detach())
-                self.initial_ped_goals_visualizer.publish(self.goals.clone().detach())
+                self.learning_vis.publish(
+                    stacked_trajectories_vis.clone().detach())
+                self.initial_ped_goals_visualizer.publish(
+                    self.goals.clone().detach())
+
             # TODO: that ROS part woldn`t need to be here
 
             #### CALC GRAD ####
@@ -119,7 +129,7 @@ class MPDM:
             total_cost = prob_cost.sum().item()
             if total_cost > max_cost:
                 max_cost = total_cost
-                max_cost_path = stacked_trajectories.clone().detach(
+                max_cost_path = stacked_trajectories_vis.clone().detach(
                 )[::len(inner_data)]  # <== only robot positions+forces
             gradient = inner_data.grad
             gradient[0, :] *= 0

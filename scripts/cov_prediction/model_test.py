@@ -65,6 +65,7 @@ for _ in range(10):
 				
 				input_ = torch.from_numpy(np.stack((cov_prev, pose_prev,pose_cur))).reshape(6,1).float() 
 				cov_ = model(input_.T).detach().numpy()[0]
+				
 				cov_list_x.append(cov_[0])
 				cov_list_y.append(cov_[1])
 			update_plot_with_pred_cov([cov_list_x],[cov_list_y],[mux],[muy],ax)
