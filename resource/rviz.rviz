@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Grid1/Line Style1
-        - /robot1/Status1
       Splitter Ratio: 0.4735293984413147
     Tree Height: 728
   - Class: rviz/Selection
@@ -96,13 +95,13 @@ Visualization Manager:
       Queue Size: 100
       Value: false
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /mpdm/learning
       Name: learning
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /mpdm/robot
@@ -188,6 +187,14 @@ Visualization Manager:
       Topic: /move_base_simple/goal
       Unreliable: false
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /mpdm/learning_with_covariance
+      Name: learning_with_cov
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -216,25 +223,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 10
+      Distance: 10.362312316894531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.0880059003829956
-        Y: 0.45325642824172974
-        Z: -0.8030979633331299
+        X: 2.0122861862182617
+        Y: 1.8239327669143677
+        Z: -0.011965596117079258
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.9453980326652527
+      Pitch: 1.4647964239120483
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.4153976440429688
+      Yaw: 3.365330457687378
     Saved: ~
 Window Geometry:
   Displays:

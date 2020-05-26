@@ -43,7 +43,7 @@ class Visualizer4:
     def yaw2q(self, yaw):
         return Quaternion(x=0, y=0, z=np.sin(yaw/2), w=np.cos(yaw/2))
 
-    def publish(self, data, text=None):
+    def publish(self, data, sizes=None, text=None):
 
         # [ [x,y,yaw,x1,y1,yaw1,x2,y2,yaw2,...],
         #   [x,y,yaw,x1,y1,yaw1,x2,y2,yaw2,...]
@@ -59,16 +59,19 @@ class Visualizer4:
         for n in range(len(data)):
             agent = data[n]
             pose = Pose()
+            scale = self.point_scale
+            if sizes is not None:
+                scale = Vector3(scale.x*sizes[n][0], scale.y * sizes[n][1], 0.1)
             pose.position.x = agent[0]
             pose.position.y = agent[1]
-            pose.position.z = self.point_scale.z/1.5
-            pose.orientation = self.yaw2q(agent[2])
+            pose.position.z = scale.z/1.5
+            pose.orientation = self.yaw2q(0) # TODO: fix it in future
 
             point_marker = Marker(
                 id=id,
                 type=Marker.SPHERE,
                 action=Marker.ADD,
-                scale=self.point_scale,
+                scale=scale,
                 color=self.point_color,  # 0 - point color
                 pose=pose
             )
@@ -81,52 +84,4 @@ class Visualizer4:
             point_marker.header.frame_id = self.frame_id
             id += 1
             markerArray.markers.append(point_marker)
-
-            # add some text
-            if self.with_text or text:
-                text_pose = Pose()
-                text_pose.position.x = agent[0]
-                text_pose.position.y = agent[1]
-                text_pose.position.z = self.point_scale.z+self.text_scale.z/1.7
-                text_marker = Marker(
-                    id=id,
-                    type=Marker.TEXT_VIEW_FACING,
-                    action=Marker.ADD,
-                    scale=self.text_scale,
-                    color=self.text_color,  # 0 - point color
-                    pose=text_pose,
-                    text=str(n+self.starting_id)
-                )
-                text_marker.text = str(n+self.starting_id)
-                if text:
-                    text_marker.text = text
-                text_marker.header.frame_id = self.frame_id
-                id += 1
-                markerArray.markers.append(text_marker)
-
-            forces = agent[3:]
-            f_num = 0
-            first_arrow = True
-            while len(forces > 0):
-                first_point = Point(agent[0], agent[1], 0)  # coords of arrow
-                second_point = Point(
-                    agent[0]+forces[0], agent[1]+forces[1], 0)  # coords of arrow
-                arrow = Marker(
-                    id=id,
-                    type=Marker.ARROW,
-                    action=Marker.ADD,
-                    scale=self.arrow_scale,
-                    color=self.arrow_colors[f_num],  # color of arrow
-                    points=[first_point, second_point],
-                    colors=[self.arrow_colors[f_num],
-                            self.arrow_colors[f_num]]  # color of arrow
-                )
-                if first_arrow:
-                    first_arrow = False
-                    arrow.scale = self.first_arrow_scale
-                arrow.header.frame_id = self.frame_id
-                markerArray.markers.append(arrow)
-                id += 1
-                f_num += 1
-                forces = forces[3:]
         self.publisher.publish(markerArray)

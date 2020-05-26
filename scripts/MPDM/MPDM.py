@@ -40,7 +40,7 @@ class MPDM:
         self.learning_vis = Visualizer3(
             "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
         self.covariance_vis = Visualizer4(
-            "mpdm/learning_with_covariance", color=4)
+            "mpdm/learning_with_covariance", size=[1, 1, 0.1], color=1, with_text=False)
         # TODO: that ROS part woldn`t need to be here
 
     def is_init(self):
@@ -105,10 +105,16 @@ class MPDM:
 
             # print (goals)
             #### VISUALIZE ####
+            # stidno, stidno....
+            stacked_covariance_vis = []
+            for x in stacked_covariance:
+                for y in x:
+                    stacked_covariance_vis.append(y)
+            # stidno, stidno....
             # TODO: that ROS part woldn`t need to be here
             if self.visualize:
                 self.covariance_vis.publish(
-                    stacked_trajectories, stacked_covariance)
+                    stacked_trajectories_vis.clone().detach(), stacked_covariance_vis)
                 self.ped_goals_visualizer.publish(goals.clone().detach())
                 # initial_pedestrians_visualizer.publish(observed_state)
                 self.pedestrians_visualizer.publish(
