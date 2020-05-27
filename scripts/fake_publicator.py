@@ -3,7 +3,9 @@ import rospy
 from geometry_msgs.msg import PoseStamped, PoseArray, Pose, Twist
 from visualization_msgs.msg import MarkerArray, Marker
 from nav_msgs.msg import Path
+from Utils.Utils import yaw2q
 import random
+
 # from tf.transformations import euler_from_quaternion, quartenion_from_euler
 
 
@@ -59,32 +61,34 @@ def distance(p1, p2):
     return ((p1.position.x - p2.position.x)**2+(p1.position.y - p2.position.y)**2)**0.5
 
 
-def generate_goal(area=[10, 10]):
+def generate_position(area=[10, 10, 3]):
     p = Pose()
     p.position.x = area[0]*random.random()
     p.position.y = area[1]*random.random()
-    p.orientation.w = 1
+    p.orientation.w = yaw2q(area[2]*(random.random()*2.-1.))
     return p
 
 
+# TODO: refactor fucking data containers
 def callback_pedestrians(msg, vars):
     peds, robot_pose, path = vars
     len_of_batch = int(1 + len(peds.poses)/3)  # 1 - the robot additional state
     # we need to take the second batch with 1st step of interaton
     ped_state_counter = 0
-    for i in range(len_of_batch, 2*len_of_batch):  # TODO: update robot state
-        # TODO: update peds speed and orientation
+    for i in range(len_of_batch, 2*len_of_batch):  
+        # update robot state
         if i is len_of_batch:
             robot_pose.pose.position = msg.markers[i].pose.position
             robot_pose.pose.orientation = msg.markers[i].pose.orientation
             continue
+        # TODO: update peds speed
         peds.poses[ped_state_counter].position = msg.markers[i].pose.position
         peds.poses[ped_state_counter].orientation = msg.markers[i].pose.orientation
         # check distance to goal and generate new one
         dist_to_goal = distance(
             peds.poses[ped_state_counter], peds.poses[ped_state_counter+2])
         if dist_to_goal < 0.3:
-            peds.poses[ped_state_counter+2] = generate_goal()
+            peds.poses[ped_state_counter+2] = generate_position()
         ped_state_counter += 3
 
 
