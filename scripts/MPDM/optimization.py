@@ -33,6 +33,8 @@ class Linear(nn.Module):
         super(Linear, self).__init__()
         self.sfm = sfm
         self.cpm = cpm
+        if self.cpm.model is None:
+            print("WARN: covariance prediction model not found")
 
     def forward(self, input):
         # TODO put state(remove) into stacked_state
@@ -45,11 +47,13 @@ class Linear(nn.Module):
             goals[0], robot_init_pose, out, policy)
         new_cost = cost + (temp.view(-1, 1))
         stacked_state_vis = torch.cat(
-            (stacked_state_vis, state.clone()))
+            (stacked_state_vis, out.clone()))
         stacked_state.append(out.clone())
         # calculate covariance
-        cov = self.cpm.calc_covariance(
-            stacked_cov[-1], stacked_state[-2][:, :2].detach().numpy(), stacked_state[-1][:, :2].detach().numpy())
+        cov = np.zeros((len(state), 2)).tolist() # TODO: fix that overengineering
+        if self.cpm.model is not None:
+            cov = self.cpm.calc_covariance(
+                stacked_cov[-1], stacked_state[-2][:, :2].detach().numpy(), stacked_state[-1][:, :2].detach().numpy())
         stacked_cov.append(cov)
 
         return (out, new_cost, stacked_cov, stacked_state, stacked_state_vis, goals, robot_init_pose, policy)

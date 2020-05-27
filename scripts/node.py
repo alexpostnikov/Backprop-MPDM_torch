@@ -25,7 +25,11 @@ if __name__ == '__main__':
     while not (rospy.is_shutdown()):
         robot, path = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
-        mpdm.update_state(robot, peds, path[-1], goals, map)
+        if robot is not None \
+            and path is not None \
+            and peds is not None \
+            and goals is not None:
+            mpdm.update_state(robot, peds, path[-1], goals, map)
         if mpdm.is_init():
             break
         rospy.sleep(1.0)
