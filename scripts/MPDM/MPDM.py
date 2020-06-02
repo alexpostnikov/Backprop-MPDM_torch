@@ -164,6 +164,7 @@ class MPDM:
                 inner_data.grad.data.zero_()
             # if starting_poses.grad is not None:
             #     starting_poses.grad.data.zero_()
+            
         return max_cost, max_cost_path
 
     def get_probability(self, inner_data, goals, param):

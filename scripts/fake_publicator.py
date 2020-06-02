@@ -9,20 +9,20 @@ import random
 # from tf.transformations import euler_from_quaternion, quartenion_from_euler
 
 
-def ps(x, y, yaw=0, frame="map"):
+def ps(x, y, yaw=0., frame="map"):
     ps = PoseStamped()
     ps.header.frame_id = frame
     ps.pose.position.x = x
     ps.pose.position.y = y
-    ps.pose.orientation.w = 1
+    ps.pose.orientation.w = 1.
     return ps
 
 
-def p(x, y, yaw=0, frame="map"):
+def p(x, y, yaw=0., frame="map"):
     p = Pose()
     p.position.x = x
     p.position.y = y
-    p.orientation.w = 1
+    p.orientation.w = 1.
     return p
 
 
@@ -61,29 +61,43 @@ def distance(p1, p2):
     return ((p1.position.x - p2.position.x)**2+(p1.position.y - p2.position.y)**2)**0.5
 
 
-def generate_position(area=[10, 10, 3]):
+def generate_position(area=[5., 5., 3.]):
     p = Pose()
     p.position.x = area[0]*random.random()
     p.position.y = area[1]*random.random()
-    p.orientation.w = yaw2q(area[2]*(random.random()*2.-1.))
+    p.orientation = yaw2q(area[2]*(random.random()*2.-1.))
     return p
 
 
 # TODO: refactor fucking data containers
 def callback_pedestrians(msg, vars):
-    peds, robot_pose, path = vars
+    peds, robot_pose, path, robot_vel = vars
     len_of_batch = int(1 + len(peds.poses)/3)  # 1 - the robot additional state
     # we need to take the second batch with 1st step of interaton
     ped_state_counter = 0
-    for i in range(len_of_batch, 2*len_of_batch):  
+    second_batch_addition_TODO = len_of_batch*2 # TODO: fix that bug 
+    for i in range(len_of_batch+second_batch_addition_TODO, 2*len_of_batch+second_batch_addition_TODO):  
         # update robot state
-        if i is len_of_batch:
-            robot_pose.pose.position = msg.markers[i].pose.position
-            robot_pose.pose.orientation = msg.markers[i].pose.orientation
+        if i is len_of_batch+second_batch_addition_TODO:
+            robot_pose.pose.position = msg.markers[i].pose.position # TODO: found why first learning robot position - [i] in the different direction. May be that correlate with initial orientation, that dont changed over time
+            robot_pose.pose.orientation = msg.markers[i].pose.orientation #TODO: found why initial orientation dont changed over time in learning proccess
+            # speed = [-msg.markers[i].pose.position.x,
+            #     msg.markers[i+1].pose.position.x-msg.markers[i].pose.position.x,
+            #     msg.markers[i+1].pose.position.z-msg.markers[i].pose.position.z]
+            robot_vel.linear.x = msg.markers[i+1].pose.position.x
+            robot_vel.linear.y = msg.markers[i+1].pose.position.y
+            # robot_vel.angular.z = msg.markers[i+1].pose.orientation.w
+            dist_to_goal = distance(
+                robot_pose.pose, path.poses[-1].pose)
+            if dist_to_goal < 0.3:
+                path.poses[-1].pose = generate_position()
+
             continue
         # TODO: update peds speed
         peds.poses[ped_state_counter].position = msg.markers[i].pose.position
         peds.poses[ped_state_counter].orientation = msg.markers[i].pose.orientation
+        peds.poses[ped_state_counter+1].position = msg.markers[i+1].pose.position
+        # peds.poses[ped_state_counter+1].orientation = msg.markers[i+1].pose.orientation
         # check distance to goal and generate new one
         dist_to_goal = distance(
             peds.poses[ped_state_counter], peds.poses[ped_state_counter+2])
@@ -119,19 +133,19 @@ if __name__ == '__main__':
     # goal[x=0,y=0,yaw=0]
     peds.poses.append(p(2, 2))
     peds.poses.append(p(0.5, 0))
-    peds.poses.append(p(3, 3))
+    peds.poses.append(generate_position())
     # 2
     peds.poses.append(p(2, 1))
     peds.poses.append(p(0.5, 0))
-    peds.poses.append(p(0, 0))
+    peds.poses.append(generate_position())
     # 3
     peds.poses.append(p(1.5, 1.5))
     peds.poses.append(p(0.5, 0))
-    peds.poses.append(p(5, 3))
+    peds.poses.append(generate_position())
 
     # some subs
     sub1 = rospy.Subscriber("mpdm/learning_with_covariance", MarkerArray,
-                            callback_pedestrians, queue_size=1, callback_args=(peds, robot_pose, path))
+                            callback_pedestrians, queue_size=1, callback_args=(peds, robot_pose, path, robot_vel))
 
     while not (rospy.is_shutdown()):
         robot_pose_pub.publish(robot_pose)
