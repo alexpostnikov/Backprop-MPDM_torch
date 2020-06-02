@@ -61,7 +61,7 @@ def distance(p1, p2):
     return ((p1.position.x - p2.position.x)**2+(p1.position.y - p2.position.y)**2)**0.5
 
 
-def generate_position(area=[5., 5., 3.]):
+def generate_position(area=[4., 4., 3.]):
     p = Pose()
     p.position.x = area[0]*random.random()
     p.position.y = area[1]*random.random()
@@ -84,8 +84,8 @@ def callback_pedestrians(msg, vars):
             # speed = [-msg.markers[i].pose.position.x,
             #     msg.markers[i+1].pose.position.x-msg.markers[i].pose.position.x,
             #     msg.markers[i+1].pose.position.z-msg.markers[i].pose.position.z]
-            robot_vel.linear.x = msg.markers[i+1].pose.position.x
-            robot_vel.linear.y = msg.markers[i+1].pose.position.y
+            # robot_vel.linear.x = msg.markers[i+1].pose.position.x
+            # robot_vel.linear.y = msg.markers[i+1].pose.position.y
             # robot_vel.angular.z = msg.markers[i+1].pose.orientation.w
             dist_to_goal = distance(
                 robot_pose.pose, path.poses[-1].pose)
@@ -97,7 +97,7 @@ def callback_pedestrians(msg, vars):
         peds.poses[ped_state_counter].position = msg.markers[i].pose.position
         peds.poses[ped_state_counter].orientation = msg.markers[i].pose.orientation
         peds.poses[ped_state_counter+1].position = msg.markers[i+1].pose.position
-        # peds.poses[ped_state_counter+1].orientation = msg.markers[i+1].pose.orientation
+        peds.poses[ped_state_counter+1].orientation = msg.markers[i+1].pose.orientation
         # check distance to goal and generate new one
         dist_to_goal = distance(
             peds.poses[ped_state_counter], peds.poses[ped_state_counter+2])
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     robot_pose = ps(10, 2)
     # velocity
     robot_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
-    robot_vel = t(1, 0)
+    robot_vel = t(0, 0)
     # path(goal)
     robot_path_pub = rospy.Publisher(
         "/move_base/GlobalPlanner/plan", Path, queue_size=1)
@@ -131,18 +131,12 @@ if __name__ == '__main__':
     # pose[x=2,y=2,yaw=0]
     # vel[vx=0.5,vy=0,vyaw=0]
     # goal[x=0,y=0,yaw=0]
-    peds.poses.append(p(2, 2))
-    peds.poses.append(p(0.5, 0))
-    peds.poses.append(generate_position())
-    # 2
-    peds.poses.append(p(2, 1))
-    peds.poses.append(p(0.5, 0))
-    peds.poses.append(generate_position())
-    # 3
-    peds.poses.append(p(1.5, 1.5))
-    peds.poses.append(p(0.5, 0))
-    peds.poses.append(generate_position())
-
+    num_peds = 3
+    for i in range(num_peds):
+        peds.poses.append(generate_position())
+        peds.poses.append(p(0, 0))
+        peds.poses.append(generate_position())
+    
     # some subs
     sub1 = rospy.Subscriber("mpdm/learning_with_covariance", MarkerArray,
                             callback_pedestrians, queue_size=1, callback_args=(peds, robot_pose, path, robot_vel))
