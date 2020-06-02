@@ -84,8 +84,8 @@ class MPDM:
         if self.states is None:
             return None
 
+        max_cost = -math.inf
         for epoch_numb in range(0, epochs):
-            max_cost = -math.inf
             inner_data = self.states.clone().detach()
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
@@ -164,7 +164,7 @@ class MPDM:
                 inner_data.grad.data.zero_()
             # if starting_poses.grad is not None:
             #     starting_poses.grad.data.zero_()
-            
+
         return max_cost, max_cost_path
 
     def get_probability(self, inner_data, goals, param):
