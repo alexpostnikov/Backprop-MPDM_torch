@@ -159,6 +159,18 @@ class RepulsiveForces():
 
         force = (force * ((self.auxullary - 1) * -1))
         force = force.matmul(self.aux2)
+        # set angle across force vector
         yaw_zeros = torch.zeros(len(force), 1)
+        yaw_zeros[:,0] = torch.acos(
+            torch.div(
+                force[:, 0], torch.sqrt(
+                    torch.pow(force[:, 0], 2)+torch.pow(force[:, 1], 2)
+                )
+            )
+        )
         force = torch.cat((force, yaw_zeros), dim=1)
+        for f in force:
+            if f[1]>0:
+                f[2]=-f[2]
+
         return force

@@ -4,7 +4,7 @@ from Param import ROS_Param
 from Utils.RosPubSub import RosPubSub
 # from Utils.Visualizer2 import Visualizer2
 from Utils.Utils import array_to_ros_path
-from MPDM.SFM import SFM
+from MPDM.HSFM import HSFM
 from MPDM.RepulsiveForces import RepulsiveForces
 from MPDM.MPDM import MPDM
 from cov_prediction.SigmaNN import SigmaNN
@@ -17,9 +17,9 @@ if __name__ == '__main__':
     # MPDM
     param = ROS_Param()
     rep_f = RepulsiveForces(param)
-    sfm = SFM(rep_f, param)
+    hsfm = HSFM(rep_f, param)
     cov_pred_model = SigmaNN()
-    mpdm = MPDM(param, sfm, cov_pred_model, visualize=True)
+    mpdm = MPDM(param, hsfm, cov_pred_model, visualize=True)
     map = ps.map.update_static_map()
     rospy.sleep(1.0)
     while not (rospy.is_shutdown()):
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         robot, path = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
         mpdm.update_state(robot, peds, path[-1], goals, map)
-        array_path = mpdm.predict(epoch=10)
+        array_path = mpdm.predict(epoch=5)
         outpath = array_to_ros_path(array_path)
         ps.path.publish(outpath)
         print("average time: ", time.time() - start)

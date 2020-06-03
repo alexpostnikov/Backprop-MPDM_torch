@@ -130,7 +130,7 @@ class MPDM:
             #### CALC GRAD ####
 
             prob_cost = cost * (probability_matrix) * (goal_prob) * vel_prob
-
+            # torch.autograd.set_detect_anomaly(True)
             prob_cost.sum().backward()
             total_cost = prob_cost.sum().item()
             if total_cost > max_cost:

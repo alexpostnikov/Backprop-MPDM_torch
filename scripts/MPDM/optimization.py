@@ -2,7 +2,7 @@
 
 import torch
 import math
-from MPDM.SFM import SFM
+from MPDM.HSFM import HSFM
 from MPDM.RepulsiveForces import RepulsiveForces
 from Utils.Visualizer2 import Visualizer2
 from Param import Param
@@ -29,9 +29,9 @@ def get_poses_probability(agents_pose, agents_pose_distrib, index_X=0, index_Y=1
 
 class Linear(nn.Module):
     # input_features, output_features, bias=True):
-    def __init__(self, sfm, cpm=None):
+    def __init__(self, hsfm, cpm=None):
         super(Linear, self).__init__()
-        self.sfm = sfm
+        self.hsfm = hsfm
         self.cpm = cpm
         if self.cpm.model is None:
             print("WARN: covariance prediction model not found")
@@ -40,10 +40,10 @@ class Linear(nn.Module):
         # TODO put state(remove) into stacked_state
         state, cost, stacked_cov, stacked_state, stacked_state_vis, goals, robot_init_pose, policy = input
         # state = 1 * input_state
-        rf, af = self.sfm.calc_forces(state, goals)
+        rf, af = self.hsfm.calc_forces(state, goals)
         F = rf + af
-        out = self.sfm.pose_propagation(F, state.clone())
-        temp = self.sfm.calc_cost_function(
+        out = self.hsfm.pose_propagation(F, state.clone())
+        temp = self.hsfm.calc_cost_function(
             goals[0], robot_init_pose, out, policy)
         new_cost = cost + (temp.view(-1, 1))
         stacked_state_vis = torch.cat(
