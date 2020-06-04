@@ -14,7 +14,6 @@ import time
 if __name__ == '__main__':
     rospy.init_node("mpdm")
     ps = RosPubSub()
-    # MPDM
     param = ROS_Param()
     rep_f = RepulsiveForces(param)
     hsfm = HSFM(rep_f, param)
@@ -45,5 +44,5 @@ if __name__ == '__main__':
         outpath = array_to_ros_path(array_path)
         ps.path.publish(outpath)
         print("average time: ", time.time() - start)
-        # rospy.sleep(0.1)
+        # rospy.sleep(0.1) # for debug
     exit()

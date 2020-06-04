@@ -123,7 +123,7 @@ def callback_pedestrians(msg, vars):
         # check distance to goal and generate new one
         dist_to_goal = distance(
             peds.poses[ped_state_counter], peds.poses[ped_state_counter+2])
-        if dist_to_goal < 0.3:
+        if dist_to_goal < 0.5:
             peds.poses[ped_state_counter+2] = generate_position()
         ped_state_counter += 3
 
@@ -153,7 +153,7 @@ if __name__ == '__main__':
     # pose[x=2,y=2,yaw=0]
     # vel[vx=0.5,vy=0,vyaw=0]
     # goal[x=0,y=0,yaw=0]
-    num_peds = 2
+    num_peds = 1
     for i in range(num_peds):
         peds.poses.append(generate_position())
         peds.poses.append(p(0, 0))

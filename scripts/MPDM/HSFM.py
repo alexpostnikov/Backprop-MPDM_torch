@@ -8,7 +8,7 @@ class HSFM:
         self.param = param
 
     def pose_propagation(self, force, state):
-        DT = self.param.DT
+        DT = self.param.DT 
         ps = self.param.pedestrians_speed
         rs = self.param.robot_speed
         kphi = self.param.k_angle
@@ -36,9 +36,9 @@ class HSFM:
         state[:, 0:2] = state[:, 0:2].clone() + dx_dy
         state[:, 3:5] = vx_vy
         # angle propagation
-        # prev_angle = state[:,2].clone()
-        # state[:,2] += -(kphi*(state[:,2]-force[:,2])-kvphi*state[:,5])*DT # angle across force direction + angular speed
-        # state[:,5] += state[:,2] - prev_angle # new angular speed
+        prev_angle = state[:,2].clone()
+        state[:,2] += -(kphi*(state[:,2]-force[:,2])-kvphi*state[:,5])*DT # angle across force direction + angular speed
+        state[:,5] += state[:,2] - prev_angle # new angular speed
         return state
 
     def calc_cost_function(self, robot_goal, robot_init_pose, agents_pose, policy=None):

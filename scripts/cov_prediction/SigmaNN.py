@@ -13,8 +13,11 @@ class SigmaNN:
     
     def calc_covariance(self, cov_prev, state_prev, state_cur):
         out = []
+        zeros = np.zeros(2)
         for agents_num in range(len(state_cur)):
-            input_ = torch.from_numpy(np.stack((cov_prev[agents_num], state_prev[agents_num],state_cur[agents_num]))).reshape(6,1).float()
+
+            # input_ = torch.from_numpy(np.stack((cov_prev[agents_num], state_prev[agents_num],state_cur[agents_num]))).reshape(6,1).float()
+            input_ = torch.from_numpy(np.stack((cov_prev[agents_num], zeros,state_cur[agents_num]-state_prev[agents_num]))).reshape(6,1).float()
             cov_ = self.model(input_.T).detach().numpy()[0]
             out.append(cov_.tolist())
         return out
