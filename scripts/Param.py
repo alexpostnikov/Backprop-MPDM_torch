@@ -38,8 +38,8 @@ class Param:
         self.socForcePersonPerson = {"k":4.9, "lambda":1., "A":12., "B":0.64,"d":0.26}
         # self.socForcePersonPerson = {"k":5.5, "lambda":1.5, "A":8., "B":0.4,"d":0.01}
         # headed social force model additional params
-        self.k_angle = 0.1
-        self.k_v_angle = 0.5
+        self.k_angle = 0.0001
+        self.k_v_angle = 0.0005
         # social force params
 
         self.a = 0.05

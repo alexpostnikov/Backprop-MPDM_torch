@@ -110,6 +110,7 @@ class MPDM:
             for x in stacked_covariance:
                 for y in x:
                     stacked_covariance_vis.append(y)
+            # stacked_covariance_vis[:,1]= stacked_covariance_vi
             # stidno, stidno....
             # TODO: that ROS part woldn`t need to be here
             if self.visualize:

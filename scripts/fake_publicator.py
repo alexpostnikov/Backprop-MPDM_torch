@@ -3,7 +3,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped, PoseArray, Pose, Twist
 from visualization_msgs.msg import MarkerArray, Marker
 from nav_msgs.msg import Path
-from Utils.Utils import yaw2q
+from Utils.Utils import yaw2q, q2yaw
 import random
 import math
 # from tf.transformations import euler_from_quaternion, quartenion_from_euler
@@ -91,18 +91,21 @@ def callback_pedestrians(msg, vars):
     len_of_batch = int(1 + len(peds.poses)/3)  # 1 - the robot additional state
     # we need to take the second batch with 1st step of interaton
     ped_state_counter = 0
-    second_batch_addition_TODO = len_of_batch*2  # TODO: fix that bug
+    # second_batch_addition_TODO = len_of_batch*2  # TODO: fix that bug
+    second_batch_addition_TODO = 0  # TODO: fix that bug
     for i in range(len_of_batch+second_batch_addition_TODO, 2*len_of_batch+second_batch_addition_TODO):
         # update robot state
         if i is len_of_batch+second_batch_addition_TODO:
             # TODO: found why first learning robot position - [i] in the different direction. May be that correlate with initial orientation, that dont changed over time
-            robot_pose.pose = msg.markers[i].pose
-            # speed = [-msg.markers[i].pose.position.x,
-            #     msg.markers[i+1].pose.position.x-msg.markers[i].pose.position.x,
-            #     msg.markers[i+1].pose.position.z-msg.markers[i].pose.position.z]
-            # robot_vel.linear.x = msg.markers[i+1].pose.position.x
-            # robot_vel.linear.y = msg.markers[i+1].pose.position.y
-            # robot_vel.angular.z = msg.markers[i+1].pose.orientation.w
+            # robot_pose.pose = msg.markers[i].pose
+            p1 = msg.markers[i].pose
+            p2 = msg.markers[i+len_of_batch].pose
+            vel, orient, vorient = get_vov(p1, p2)
+            robot_pose.pose.position = p1.position
+            robot_pose.pose.orientation = orient
+            robot_vel.linear.x = vel.x
+            robot_vel.linear.y = vel.y
+            robot_vel.angular.z = q2yaw(vorient)
             dist_to_goal = distance(
                 robot_pose.pose, path.poses[-1].pose)
             if dist_to_goal < 0.3:
@@ -117,12 +120,6 @@ def callback_pedestrians(msg, vars):
         peds.poses[ped_state_counter].orientation = orient
         peds.poses[ped_state_counter+1].position = vel
         peds.poses[ped_state_counter+1].orientation = vorient
-        # speed = [-msg.markers[i].pose.position.x,
-        #         msg.markers[i+1].pose.position.x-msg.markers[i].pose.position.x,
-        #         msg.markers[i+1].pose.position.z-msg.markers[i].pose.position.z]
-
-        # peds.poses[ped_state_counter+1].position = msg.markers[i+1].pose.position
-        # peds.poses[ped_state_counter+1].orientation = msg.markers[i+1].pose.orientation
         # check distance to goal and generate new one
         dist_to_goal = distance(
             peds.poses[ped_state_counter], peds.poses[ped_state_counter+2])
@@ -156,7 +153,7 @@ if __name__ == '__main__':
     # pose[x=2,y=2,yaw=0]
     # vel[vx=0.5,vy=0,vyaw=0]
     # goal[x=0,y=0,yaw=0]
-    num_peds = 10
+    num_peds = 2
     for i in range(num_peds):
         peds.poses.append(generate_position())
         peds.poses.append(p(0, 0))
@@ -171,6 +168,6 @@ if __name__ == '__main__':
         robot_vel_pub.publish(robot_vel)
         robot_path_pub.publish(path)
         ped_pub.publish(peds)
-        rospy.sleep(0.5)
+        rospy.sleep(0.05)
 
     # MPDM
