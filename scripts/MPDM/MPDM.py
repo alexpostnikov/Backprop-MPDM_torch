@@ -52,9 +52,10 @@ class MPDM:
             self.prev_states = self.states
             states = [robot]
             goals = [robot_goal]
-            for i in range(len(peds)):
-                states.append(peds[i])
-                goals.append(peds_goals[i])
+            if peds is not None and len(peds)>1:
+                for i in range(len(peds)):
+                    states.append(peds[i])
+                    goals.append(peds_goals[i])
             self.goals = torch.Tensor(goals)
             self.states = torch.Tensor(states)
         except:
@@ -85,6 +86,7 @@ class MPDM:
             return None
 
         max_cost = -math.inf
+        max_cost_path = None
         for epoch_numb in range(0, epochs):
             inner_data = self.states.clone().detach()
             inner_data.requires_grad_(True)

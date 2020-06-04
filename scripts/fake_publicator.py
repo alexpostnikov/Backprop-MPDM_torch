@@ -149,12 +149,12 @@ if __name__ == '__main__':
     ped_pub = rospy.Publisher("/peds/pose_vel_goal", PoseArray, queue_size=1)
     peds = PoseArray()
     peds.header.frame_id = frame
-    # 1
-    # pose[x=2,y=2,yaw=0]
-    # vel[vx=0.5,vy=0,vyaw=0]
-    # goal[x=0,y=0,yaw=0]
-    num_peds = 1
+
+    num_peds = 0
     for i in range(num_peds):
+        # pose[x=2,y=2,yaw=0]
+        # vel[vx=0.5,vy=0,vyaw=0]
+        # goal[x=0,y=0,yaw=0]
         peds.poses.append(generate_position())
         peds.poses.append(p(0, 0))
         peds.poses.append(generate_position())

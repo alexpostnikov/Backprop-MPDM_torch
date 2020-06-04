@@ -25,9 +25,7 @@ if __name__ == '__main__':
         robot, path = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
         if robot is not None \
-            and path is not None \
-            and peds is not None \
-            and goals is not None:
+            and path is not None:
             mpdm.update_state(robot, peds, path[-1], goals, map)
         if mpdm.is_init():
             break
@@ -35,7 +33,7 @@ if __name__ == '__main__':
         rospy.loginfo("no data of robot_state or peds_state")
     rospy.loginfo("mpdm is initialized")
 
-    while not (rospy.is_shutdown()):
+    while not rospy.is_shutdown():
         start = time.time()
         robot, path = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()

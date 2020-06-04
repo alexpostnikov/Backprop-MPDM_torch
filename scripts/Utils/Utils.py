@@ -33,8 +33,9 @@ def t(x, y, yaw=0):
 def array_to_ros_path(array, frame_id="map"):
     path = Path()
     path.header.frame_id = frame_id
-    for pose in array:
-        path.poses.append(ps(pose[0], pose[1], 0, frame_id))
+    if array is not None:
+        for pose in array:
+            path.poses.append(ps(pose[0], pose[1], 0, frame_id))
     return path
 
 def euler_to_quaternion(yaw, pitch, roll):
