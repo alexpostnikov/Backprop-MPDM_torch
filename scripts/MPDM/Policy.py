@@ -1,30 +1,9 @@
-from optimization import optimize
 import math
 import torch
 
 class Policy():
     def __init__(self):
         pass
-    
-    def get_policy_cost(self,sequential, observed_state, goals, param, lr, ped_goals_visualizer,
-                  initial_pedestrians_visualizer,
-                  pedestrians_visualizer, robot_visualizer,
-                  learning_vis, initial_ped_goals_visualizer, policy=None):
-
-    starting_poses = observed_state.clone()
-    starting_poses, goals_in_policy, param.robot_speed = apply_policy(
-        policy, starting_poses, goals.clone(), param.robot_speed)
-    
-    goals_in_policy.requires_grad_(True)
-
-    cost = optimize(param.optim_epochs, sequential, starting_poses,
-                    param.robot_init_pose, param,
-                    goals_in_policy, lr, ped_goals_visualizer,
-                    initial_pedestrians_visualizer,
-                    pedestrians_visualizer, robot_visualizer,
-                    learning_vis, initial_ped_goals_visualizer, policy)
-    return cost
-
     def apply_policy(self,policy, starting_poses, goals, robot_speed):
         if policy == "stop":
             # starting_poses[0,2:4] = -20 * starting_poses[0,2:4].clone()
@@ -84,4 +63,26 @@ class Policy():
         qx = ox + math.cos(angle) * (px - ox) - math.sin(angle) * (py - oy)
         qy = oy + math.sin(angle) * (px - ox) + math.cos(angle) * (py - oy)
         return qx, qy
+        
+    # TODO: insert into MPDM
+    # def get_policy_cost(self,sequential, observed_state, goals, param, lr, ped_goals_visualizer,
+    #               initial_pedestrians_visualizer,
+    #               pedestrians_visualizer, robot_visualizer,
+    #               learning_vis, initial_ped_goals_visualizer, policy=None):
+
+    # starting_poses = observed_state.clone()
+    # starting_poses, goals_in_policy, param.robot_speed = apply_policy(
+    #     policy, starting_poses, goals.clone(), param.robot_speed)
+    
+    # goals_in_policy.requires_grad_(True)
+
+    # cost = optimize(param.optim_epochs, sequential, starting_poses,
+    #                 param.robot_init_pose, param,
+    #                 goals_in_policy, lr, ped_goals_visualizer,
+    #                 initial_pedestrians_visualizer,
+    #                 pedestrians_visualizer, robot_visualizer,
+    #                 learning_vis, initial_ped_goals_visualizer, policy)
+    # return cost
+
+
 
