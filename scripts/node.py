@@ -5,7 +5,6 @@ from Utils.RosPubSub import RosPubSub
 # from Utils.Visualizer2 import Visualizer2
 from Utils.Utils import array_to_ros_path
 from MPDM.HSFM import HSFM
-from MPDM.RepulsiveForces import RepulsiveForces
 from MPDM.MPDM import MPDM
 from cov_prediction.SigmaNN import SigmaNN
 import time
@@ -15,8 +14,8 @@ if __name__ == '__main__':
     rospy.init_node("mpdm")
     ps = RosPubSub()
     param = ROS_Param()
-    rep_f = RepulsiveForces(param)
-    hsfm = HSFM(rep_f, param)
+    hsfm = HSFM(param)
+    # sfm = SFM(param)
     cov_pred_model = SigmaNN()
     mpdm = MPDM(param, hsfm, cov_pred_model, visualize=True)
     map = ps.map.update_static_map()

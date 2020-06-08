@@ -1,11 +1,12 @@
 
 import torch
+from MPDM.RepulsiveForces import RepulsiveForces
 
 
 class SFM:
-    def __init__(self, repulsive_forces, param):
-        self.rep_f = repulsive_forces
+    def __init__(self, param):
         self.param = param
+        self.rep_f = RepulsiveForces(self.param)
 
     def pose_propagation(self, force, state):
         DT = self.param.DT

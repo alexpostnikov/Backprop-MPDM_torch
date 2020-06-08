@@ -1,4 +1,4 @@
-from MPDM.optimization import Linear
+from MPDM.Layer import Linear
 import torch.nn as nn
 import torch
 import numpy as np
