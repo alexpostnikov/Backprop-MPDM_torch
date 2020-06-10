@@ -23,30 +23,10 @@ class MPDM:
             self.modules.append(Linear(transition_model, covariance_model))
         self.sequential = nn.Sequential(*self.modules)
 
-       # TODO: that ROS part woldn`t need to be here
-        # self.visualize = visualize
-
-        # # self.pedestrians_visualizer = Visualizer3("mpdm/peds", starting_id=1)
-        # self.initial_pedestrians_visualizer = Visualizer3("mpdm/peds_initial", color=3, size=[
-        #     0.6/3, 0.6/3, 1.8/3], with_text=False)
-        # self.ped_goals_visualizer = Visualizer3(
-        #     "mpdm/goals", size=[0.1, 0.1, 0.5])
-        # self.initial_ped_goals_visualizer = Visualizer3(
-        #     "mpdm/goals_initial", size=[0.05, 0.05, 0.25], color=3, with_text=True)
-        # self.robot_visualizer = Visualizer3(
-        #     "mpdm/robot", color=1, with_text=False)
-        # self.policy_visualizer = Visualizer3(
-        #     "mpdm/robot_policy", color=1,  with_text=False)
-        # self.learning_vis = Visualizer3(
-        #     "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
-        # self.covariance_vis = Visualizer4(
-        #     "mpdm/learning_with_covariance", size=[1, 1, 0.1], color=1, with_text=False)
-        # TODO: that ROS part woldn`t need to be here
-
     def is_init(self):
         return self.states is not None
 
-    def update_state(self, robot, peds, robot_goal, peds_goals, map=None):
+    def update_state(self, robot: np.ndarray, peds: np.ndarray, robot_goal: np.ndarray, peds_goals: np.ndarray, map=None):
         try:
             self.prev_states = self.states.copy()
         except:
@@ -80,12 +60,14 @@ class MPDM:
 
     def optimize(self, epochs):
         if self.states is None:
+            print("\t Warn: states is None!")
             return None
 
         max_cost = -math.inf
         max_cost_path = None
+        starting_poses = self.states.clone().detach()
         for epoch_numb in range(0, epochs):
-            inner_data = self.states.clone().detach()
+            inner_data = starting_poses.clone().detach()
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
             goals.requires_grad_(True)
@@ -98,8 +80,9 @@ class MPDM:
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
             stacked_state = [inner_data.clone()]
             # TODO: stopped here
-            inner_data, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
+            inner_data_, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
                 (inner_data, stacked_state, cost, stacked_covariance, goals, self.policys))
+
             # _, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, _, _, _ = self.sequential(
             #     (inner_data, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, goals, robot_init_pose, self.policys))
 
@@ -139,7 +122,7 @@ class MPDM:
                 # max_cost_path = stacked_trajectories_vis.clone().detach(
                 # )[::len(inner_data)]  # <== only robot positions+forces
             gradient = inner_data.grad
-
+            print ("gradient = ", gradient)
             if gradient is not None:
                 gradient[0, :] *= 0
                 with torch.no_grad():
@@ -148,10 +131,10 @@ class MPDM:
                     delta_vel = 100*self.param.lr * gradient[1:, 2:4]
                     delta_pose = torch.clamp(delta_pose, max=0.01, min=-0.01)
                     delta_vel = torch.clamp(delta_vel, max=0.02, min=-0.02)
-                    # starting_poses[1:, 0:2] = starting_poses[1:,
-                    #                                          0:2] + delta_pose
-                    # starting_poses[1:, 2:4] = starting_poses[1:,
-                    #                                          2:4] + delta_vel
+                    starting_poses[1:, 0:2] = starting_poses[1:,
+                                                             0:2] + delta_pose
+                    starting_poses[1:, 2:4] = starting_poses[1:,
+                                                             2:4] + delta_vel
                     goals.grad[0, :] = goals.grad[0, :] * 0
 
                     goals = (goals + torch.clamp(self.param.lr * 10 * goals.grad,

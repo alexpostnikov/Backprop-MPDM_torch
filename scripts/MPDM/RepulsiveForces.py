@@ -118,9 +118,9 @@ class RepulsiveForces():
         [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.],
         [ 1.,  0.,  2.,  1., -1., -1.,  0., -1.]]
         '''
-        delta_pose = (-state_concated_t + state_concated) + 0.0000001
+        delta_pose = (-state_concated_t + state_concated) + 1e-6
 
-        dist_squared = ((delta_pose)**2)
+        dist_squared = delta_pose ** 2
         # used to calc delta_x**2 +delta_y**2 of each agent
 
         # sqrt(delta_x**2 +delta_y**2) -> distance
@@ -141,21 +141,23 @@ class RepulsiveForces():
 
         # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
 
-        velocity_state_concated = velocity_state.clone().matmul(self.aux1)
+        # velocity_state_concated = velocity_state.clone().matmul(self.aux1)
 
-        velocity_atan = torch.atan2(
-            velocity_state_concated[:, self.uneven_indexes], velocity_state_concated[:, self.even_indexes])
-        # print ("delta_pose", delta_pose)
-        dy = delta_pose[:, self.uneven_indexes]
-        dx = delta_pose[:, self.even_indexes]
-        deltapose_atan = torch.atan2(-dy, -dx)
-        phi = ((velocity_atan - deltapose_atan) +
-               math.pi) % (2*math.pi) - math.pi
+        #TODO: add anisotropy
 
-        anisotropy = param_lambda + (1 - param_lambda)*(1+torch.cos(phi))/2.
-        anisotropy = anisotropy.matmul(self.auxullary)
+        # velocity_atan = torch.atan2(
+        #     velocity_state_concated[:, self.uneven_indexes], velocity_state_concated[:, self.even_indexes])
+        # # print ("delta_pose", delta_pose)
+        # dy = delta_pose[:, self.uneven_indexes]
+        # dx = delta_pose[:, self.even_indexes]
+        # deltapose_atan = torch.atan2(-dy, -dx)
+        # phi = ((velocity_atan - deltapose_atan) +
+        #        math.pi) % (2*math.pi) - math.pi
+        #
+        # anisotropy = param_lambda + (1 - param_lambda)*(1+torch.cos(phi))/2.
+        # anisotropy = anisotropy.matmul(self.auxullary)
         force = force_amplitude.matmul(
-            self.auxullary)*(delta_pose / (dist).matmul(self.auxullary)) * anisotropy
+            self.auxullary)*(delta_pose / (dist).matmul(self.auxullary)) # * anisotropy
 
         force = (force * ((self.auxullary - 1) * -1))
         force = force.matmul(self.aux2)

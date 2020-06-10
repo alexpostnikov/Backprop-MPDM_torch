@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import rospy
+import numpy as np
 from Param import ROS_Param
 from Utils.RosPubSub import RosPubSub
 from Utils.Utils import array_to_ros_path
@@ -32,11 +33,14 @@ if __name__ == '__main__':
         start = time.time()
         # update state
         robot, goal = ps.robot.get_robot_state()
-        peds, goals = ps.peds.get_peds_state()
+        # robot[2:4] = np.random.rand(2)
+        robot[0:2] = np.random.rand(2)
+
+        # peds, goals = ps.peds.get_peds_state()
         map = ps.map.update_static_map()
         mpdm.update_state(robot, peds, goal, goals, map)
         # compute
-        array_path = mpdm.predict(epoch=1)
+        array_path = mpdm.predict(epoch=10)
         # learning = mpdm.get_debug_data()
         # convert to ROS msgs and send out
         outpath = array_to_ros_path(array_path)

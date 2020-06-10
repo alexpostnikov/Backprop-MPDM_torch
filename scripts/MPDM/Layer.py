@@ -23,9 +23,10 @@ class Linear(nn.Module):
         rf, af = self.tm.calc_forces(state, goals)
         F = rf + af
         out = self.tm.pose_propagation(F, state.clone())
-        temp = self.tm.calc_cost_function(
+        current_cost = self.tm.calc_cost_function(
             goals[0], robot_init_pose, out, policy)
-        new_cost = cost + (temp.view(-1, 1))   
+        new_cost = cost + (current_cost.view(-1, 1))
+
         stacked_state.append(out.clone())
         # calculate covariance
         cov = np.zeros((len(state), 2)).tolist() # TODO: fix that
