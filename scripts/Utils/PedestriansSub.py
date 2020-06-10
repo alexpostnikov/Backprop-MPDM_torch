@@ -1,30 +1,33 @@
 import rospy
-from geometry_msgs.msg import PoseArray
+from mpdm.msg import Peds
 from Utils.Utils import q2yaw
 import numpy as np
 
 
 class PedestriansSub:
-    def __init__(self, topic="/peds/pose_vel_goal"):
+    def __init__(self, topic="mpdm/peds"):
         self.peds = None
         self.goals = None
         self.peds_sub = rospy.Subscriber(
-            topic, PoseArray, self.callback, queue_size=1)
+            topic, Peds, self.callback, queue_size=1)
 
     def callback(self, msg):
+        # convert ros msg into input array for mpdm
         peds = []
         goals = []
-        for i in range(0, len(msg.poses), 3):
-            x = msg.poses[i].position.x
-            y = msg.poses[i].position.y
-            yaw = q2yaw(msg.poses[i].orientation)
-            vx = msg.poses[i+1].position.x
-            vy = msg.poses[i+1].position.y
-            vyaw = q2yaw(msg.poses[i+1].orientation)
+        for ped in msg.peds:
+            if ped.id.data is "0" or ped.id.data is "robot":
+                continue
+            x = ped.position.position.x
+            y = ped.position.position.y
+            yaw = q2yaw(ped.position.orientation)
+            vx = ped.velocity.position.x
+            vy = ped.velocity.position.y
+            vyaw = q2yaw(ped.velocity.orientation)
+            gx = ped.goal.position.x
+            gy = ped.goal.position.y
+            gyaw = q2yaw(ped.goal.orientation)
             peds.append([x, y, yaw, vx, vy, vyaw])
-            gx = msg.poses[i+2].position.x
-            gy = msg.poses[i+2].position.y
-            gyaw = q2yaw(msg.poses[i+2].orientation)
             goals.append([gx, gy, gyaw])
         self.peds = np.array(peds)
         self.goals = np.array(goals)

@@ -9,7 +9,7 @@ from Utils.Visualizer4 import Visualizer4
 
 
 class MPDM:
-    def __init__(self, param, sfm, covariance_model=None, visualize=False, policys=None):
+    def __init__(self, param, transition_model, covariance_model=None, policys=None):
         self.param = param
         self.map = None
         self.policys = policys
@@ -20,27 +20,27 @@ class MPDM:
         self.prev_states = None
         ###### MODEL CREATING ######
         for _ in range(self.param.number_of_layers):
-            self.modules.append(Linear(sfm, covariance_model))
+            self.modules.append(Linear(transition_model, covariance_model))
         self.sequential = nn.Sequential(*self.modules)
 
        # TODO: that ROS part woldn`t need to be here
-        self.visualize = visualize
+        # self.visualize = visualize
 
-        self.pedestrians_visualizer = Visualizer3("mpdm/peds", starting_id=1)
-        self.initial_pedestrians_visualizer = Visualizer3("mpdm/peds_initial", color=3, size=[
-            0.6/3, 0.6/3, 1.8/3], with_text=False)
-        self.ped_goals_visualizer = Visualizer3(
-            "mpdm/goals", size=[0.1, 0.1, 0.5])
-        self.initial_ped_goals_visualizer = Visualizer3(
-            "mpdm/goals_initial", size=[0.05, 0.05, 0.25], color=3, with_text=True)
-        self.robot_visualizer = Visualizer3(
-            "mpdm/robot", color=1, with_text=False)
-        self.policy_visualizer = Visualizer3(
-            "mpdm/robot_policy", color=1,  with_text=False)
-        self.learning_vis = Visualizer3(
-            "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
-        self.covariance_vis = Visualizer4(
-            "mpdm/learning_with_covariance", size=[1, 1, 0.1], color=1, with_text=False)
+        # # self.pedestrians_visualizer = Visualizer3("mpdm/peds", starting_id=1)
+        # self.initial_pedestrians_visualizer = Visualizer3("mpdm/peds_initial", color=3, size=[
+        #     0.6/3, 0.6/3, 1.8/3], with_text=False)
+        # self.ped_goals_visualizer = Visualizer3(
+        #     "mpdm/goals", size=[0.1, 0.1, 0.5])
+        # self.initial_ped_goals_visualizer = Visualizer3(
+        #     "mpdm/goals_initial", size=[0.05, 0.05, 0.25], color=3, with_text=True)
+        # self.robot_visualizer = Visualizer3(
+        #     "mpdm/robot", color=1, with_text=False)
+        # self.policy_visualizer = Visualizer3(
+        #     "mpdm/robot_policy", color=1,  with_text=False)
+        # self.learning_vis = Visualizer3(
+        #     "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
+        # self.covariance_vis = Visualizer4(
+        #     "mpdm/learning_with_covariance", size=[1, 1, 0.1], color=1, with_text=False)
         # TODO: that ROS part woldn`t need to be here
 
     def is_init(self):
@@ -48,11 +48,14 @@ class MPDM:
 
     def update_state(self, robot, peds, robot_goal, peds_goals, map=None):
         try:
+            self.prev_states = self.states.copy()
+        except:
+            pass
+        try:
             self.map = map
-            self.prev_states = self.states
             states = [robot]
             goals = [robot_goal]
-            if peds is not None and len(peds)>1:
+            if peds is not None and len(peds) > 1:
                 for i in range(len(peds)):
                     states.append(peds[i])
                     goals.append(peds_goals[i])
@@ -67,13 +70,7 @@ class MPDM:
         # ...
         # ]
 
-    def predict(self, epoch=20):
-
-        # TODO: try to work without 0) policys 1) map 2) goals 3) peds
-        # only for test
-        # self.robot =
-        # only for test
-
+    def predict(self, epoch=10):
         cost, array_path = self.optimize(epoch)
         self.path = array_path
         return self.path
@@ -92,41 +89,42 @@ class MPDM:
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
             goals.requires_grad_(True)
-            robot_init_pose = inner_data[0, :3]
             ### FORWARD PASS ####
             # cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
             cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
-            goal_prob[0] = 1.  # robot goal
+            goal_prob[0] = 1.  # robot goal probability
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
-            stacked_trajectories = [inner_data.clone()]
-            stacked_trajectories_vis = inner_data.clone()
-            _, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, _, _, _ = self.sequential(
-                (inner_data, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, goals, robot_init_pose, self.policys))
+            stacked_state = [inner_data.clone()]
+            # TODO: stopped here
+            inner_data, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
+                (inner_data, stacked_state, cost, stacked_covariance, goals, self.policys))
+            # _, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, _, _, _ = self.sequential(
+            #     (inner_data, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, goals, robot_init_pose, self.policys))
 
             # print (goals)
             #### VISUALIZE ####
             # stidno, stidno....
-            stacked_covariance_vis = []
-            for x in stacked_covariance:
-                for y in x:
-                    stacked_covariance_vis.append(y)
+            # stacked_covariance_vis = []
+            # for x in stacked_covariance:
+            #     for y in x:
+            #         stacked_covariance_vis.append(y)
             # stacked_covariance_vis[:,1]= stacked_covariance_vi
             # stidno, stidno....
             # TODO: that ROS part woldn`t need to be here
-            if self.visualize:
-                self.covariance_vis.publish(
-                    stacked_trajectories_vis.clone().detach(), stacked_covariance_vis)
-                self.ped_goals_visualizer.publish(goals.clone().detach())
-                # initial_pedestrians_visualizer.publish(observed_state)
-                self.pedestrians_visualizer.publish(
-                    inner_data[1:].clone().detach())
-                self.robot_visualizer.publish(inner_data[0:1].clone().detach())
-                self.learning_vis.publish(
-                    stacked_trajectories_vis.clone().detach())
-                self.initial_ped_goals_visualizer.publish(
-                    self.goals.clone().detach())
+            # if self.visualize:
+            #     self.covariance_vis.publish(
+            #         stacked_trajectories_vis.clone().detach(), stacked_covariance_vis)
+            #     self.ped_goals_visualizer.publish(goals.clone().detach())
+            #     # initial_pedestrians_visualizer.publish(observed_state)
+            #     # self.pedestrians_visualizer.publish(
+            #     #     inner_data[1:].clone().detach())
+            #     self.robot_visualizer.publish(inner_data[0:1].clone().detach())
+            #     self.learning_vis.publish(
+            #         stacked_trajectories_vis.clone().detach())
+            #     self.initial_ped_goals_visualizer.publish(
+            #         self.goals.clone().detach())
 
             # TODO: that ROS part woldn`t need to be here
 
@@ -138,12 +136,12 @@ class MPDM:
             total_cost = prob_cost.sum().item()
             if total_cost > max_cost:
                 max_cost = total_cost
-                max_cost_path = stacked_trajectories_vis.clone().detach(
-                )[::len(inner_data)]  # <== only robot positions+forces
+                # max_cost_path = stacked_trajectories_vis.clone().detach(
+                # )[::len(inner_data)]  # <== only robot positions+forces
             gradient = inner_data.grad
-            gradient[0, :] *= 0
 
             if gradient is not None:
+                gradient[0, :] *= 0
                 with torch.no_grad():
 
                     delta_pose = self.param.lr * gradient[1:, 0:2]

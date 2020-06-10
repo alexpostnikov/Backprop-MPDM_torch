@@ -67,6 +67,7 @@ class HSFM:
         #     print (goal, policy)
         #     ppp = policy
         # print (PG, policy)
+        B[B!=B]=0
         return B
 
     def calc_forces(self, state, goals):
@@ -97,4 +98,6 @@ class HSFM:
         v_desired_x_y_yaw[0] *= rs / v_desired_[0]
         # print (pedestrians_speed)
         F_attr = k * (v_desired_x_y_yaw - input_state[:, 3:])
+        # quick fixer for nan
+        F_attr[F_attr!=F_attr]=0
         return F_attr
