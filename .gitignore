@@ -6,6 +6,7 @@ __pycache__/*
 *hp_tuning*
 logs/*
 .vscode/*
+.idea/*
 .ipynb_checkpoints/*
 *.bag
 *.pyc
@@ -13,3 +14,4 @@ logs/*
 *.npz
 validation_result.txt
 ./build*
+venv/*

@@ -31,6 +31,6 @@ class Linear(nn.Module):
         cov = np.zeros((len(state), 2)).tolist() # TODO: fix that
         if self.cpm.model is not None:
             cov = self.cpm.calc_covariance(
-                stacked_cov[-1], stacked_state[-2][:, :2].detach().numpy(), stacked_state[-1][:, :2].detach().numpy())
+                stacked_cov[-1], stacked_state[-2][:, :2].clone().detach().numpy(), stacked_state[-1][:, :2].clone().detach().numpy())
         stacked_cov.append(cov)
         return (out, stacked_state, new_cost, stacked_cov, goals, policy)

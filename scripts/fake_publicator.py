@@ -45,20 +45,20 @@ def get_vov(p1, p2):
 def callback_update_state(msg, vars):
     peds, robot_pose = vars
     # founding out the best_epoch in learning
-    best_epoch = msg.epoch[0]
-    for epoch in msg.epoch:
-        if best_epoch.cost > epoch.cost:
+    best_epoch = msg.epochs[0]
+    for epoch in msg.epochs:
+        if best_epoch.cost.data > epoch.cost.data:
             best_epoch = epoch
     # update current state on one step
     peds = best_epoch.steps[1]
     # check achievieng goals and update their in that case
-    for agent in peds:
+    for agent in peds.peds:
         dist = distance(agent.position, agent.goal)
         if dist<0.5:
             agent.goal = generate_position()
     # founding out robot state and update
-    for agent in peds:
-        if agent.id is "0" or agent.id is "robot":
+    for agent in peds.peds:
+        if agent.id.data is "0" or agent.id.data is "robot":
             robot_pose = agent.position
 
 

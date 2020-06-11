@@ -3,10 +3,7 @@ import torch.nn as nn
 import torch
 import numpy as np
 import math
-# TODO: that ROS part woldn`t need to be here
-from Utils.Visualizer3 import Visualizer3
-from Utils.Visualizer4 import Visualizer4
-
+import time
 
 class MPDM:
     def __init__(self, param, transition_model, covariance_model=None, policys=None):
@@ -18,30 +15,14 @@ class MPDM:
         self.goals = None
         self.states = None
         self.prev_states = None
+        self.learning_stacked_state = []
+        self.learning_stacked_cost = []
+        self.learning_stacked_covariance = []
+        self.learning_stacked_policys = []
         ###### MODEL CREATING ######
-        for _ in range(self.param.number_of_layers):
+        for lalala in range(self.param.number_of_layers):
             self.modules.append(Linear(transition_model, covariance_model))
         self.sequential = nn.Sequential(*self.modules)
-
-       # TODO: that ROS part woldn`t need to be here
-        # self.visualize = visualize
-
-        # # self.pedestrians_visualizer = Visualizer3("mpdm/peds", starting_id=1)
-        # self.initial_pedestrians_visualizer = Visualizer3("mpdm/peds_initial", color=3, size=[
-        #     0.6/3, 0.6/3, 1.8/3], with_text=False)
-        # self.ped_goals_visualizer = Visualizer3(
-        #     "mpdm/goals", size=[0.1, 0.1, 0.5])
-        # self.initial_ped_goals_visualizer = Visualizer3(
-        #     "mpdm/goals_initial", size=[0.05, 0.05, 0.25], color=3, with_text=True)
-        # self.robot_visualizer = Visualizer3(
-        #     "mpdm/robot", color=1, with_text=False)
-        # self.policy_visualizer = Visualizer3(
-        #     "mpdm/robot_policy", color=1,  with_text=False)
-        # self.learning_vis = Visualizer3(
-        #     "mpdm/learning", size=[0.2, 0.2, 1.0], color=2, with_text=False)
-        # self.covariance_vis = Visualizer4(
-        #     "mpdm/learning_with_covariance", size=[1, 1, 0.1], color=1, with_text=False)
-        # TODO: that ROS part woldn`t need to be here
 
     def is_init(self):
         return self.states is not None
@@ -71,8 +52,11 @@ class MPDM:
         # ]
 
     def predict(self, epoch=10):
-        cost, array_path = self.optimize(epoch)
-        self.path = array_path
+        self.optimize(epoch)
+        best_epoch = self.learning_stacked_cost.index(
+            min(self.learning_stacked_cost))
+        self.path = torch.stack(self.learning_stacked_state)[
+            best_epoch, :, 0]  # suk
         return self.path
 
     def get_robot_path(self,):
@@ -84,7 +68,14 @@ class MPDM:
 
         max_cost = -math.inf
         max_cost_path = None
+
+        self.learning_stacked_state = []
+        self.learning_stacked_cost = []
+        self.learning_stacked_covariance = []
+        self.learning_stacked_policys = []
+        self.propogation_times = []
         for epoch_numb in range(0, epochs):
+            start = time.time()
             inner_data = self.states.clone().detach()
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
@@ -97,49 +88,22 @@ class MPDM:
             goal_prob[0] = 1.  # robot goal probability
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
             stacked_state = [inner_data.clone()]
-            # TODO: stopped here
             inner_data, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
                 (inner_data, stacked_state, cost, stacked_covariance, goals, self.policys))
-            # _, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, _, _, _ = self.sequential(
-            #     (inner_data, cost, stacked_covariance, stacked_trajectories, stacked_trajectories_vis, goals, robot_init_pose, self.policys))
 
-            # print (goals)
-            #### VISUALIZE ####
-            # stidno, stidno....
-            # stacked_covariance_vis = []
-            # for x in stacked_covariance:
-            #     for y in x:
-            #         stacked_covariance_vis.append(y)
-            # stacked_covariance_vis[:,1]= stacked_covariance_vi
-            # stidno, stidno....
-            # TODO: that ROS part woldn`t need to be here
-            # if self.visualize:
-            #     self.covariance_vis.publish(
-            #         stacked_trajectories_vis.clone().detach(), stacked_covariance_vis)
-            #     self.ped_goals_visualizer.publish(goals.clone().detach())
-            #     # initial_pedestrians_visualizer.publish(observed_state)
-            #     # self.pedestrians_visualizer.publish(
-            #     #     inner_data[1:].clone().detach())
-            #     self.robot_visualizer.publish(inner_data[0:1].clone().detach())
-            #     self.learning_vis.publish(
-            #         stacked_trajectories_vis.clone().detach())
-            #     self.initial_ped_goals_visualizer.publish(
-            #         self.goals.clone().detach())
-
-            # TODO: that ROS part woldn`t need to be here
+            if self.policys is None:
+                self.learning_stacked_policys.append("None")
+            self.learning_stacked_state.append(torch.stack(stacked_state))
+            # maybe need to append total_cost instead of cost
+            self.learning_stacked_covariance.append(stacked_covariance)
 
             #### CALC GRAD ####
 
             prob_cost = cost * (probability_matrix) * (goal_prob) * vel_prob
             # torch.autograd.set_detect_anomaly(True)
             prob_cost.sum().backward()
-            total_cost = prob_cost.sum().item()
-            if total_cost > max_cost:
-                max_cost = total_cost
-                # max_cost_path = stacked_trajectories_vis.clone().detach(
-                # )[::len(inner_data)]  # <== only robot positions+forces
+            self.learning_stacked_cost.append(float(prob_cost.sum()))
             gradient = inner_data.grad
-
             if gradient is not None:
                 gradient[0, :] *= 0
                 with torch.no_grad():
@@ -163,11 +127,20 @@ class MPDM:
                 goals.grad.data.zero_()
             if inner_data.grad is not None:
                 inner_data.grad.data.zero_()
+            self.propogation_times.append(time.time() - start)
             # if starting_poses.grad is not None:
             #     starting_poses.grad.data.zero_()
+        # learning out in:
+        # self.learning_stacked_state,
+        # self.goals,
+        # self.learning_stacked_cost,
+        # self.learning_stacked_covariance,
+        # self.policys
 
-        return max_cost, max_cost_path
+    def get_learning_data(self):
+        return self.learning_stacked_state, self.goals, self.learning_stacked_cost, self.learning_stacked_covariance, self.learning_stacked_policys, self.propogation_times
 
+    # TODO: go out to fake_publicator
     def get_probability(self, inner_data, goals, param):
 
         # pose
@@ -209,3 +182,9 @@ class MPDM:
         goal_prob = probability_.view(-1, 1).requires_grad_(True)
 
         return probability_matrix, goal_prob, vel_prob
+
+
+# measure risks from covariances
+# acceleration
+# different
+# recurent net

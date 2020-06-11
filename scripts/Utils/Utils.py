@@ -19,7 +19,7 @@ def p(x, y, yaw=0, frame="map"):
     p = Pose()
     p.position.x = x
     p.position.y = y
-    p.orientation.w = 1
+    p.orientation = yaw2q(yaw)
     return p
 
 

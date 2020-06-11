@@ -33,14 +33,15 @@ if __name__ == '__main__':
         # update state
         robot, goal = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
-        map = ps.map.update_static_map()
+        # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map 
         mpdm.update_state(robot, peds, goal, goals, map)
         # compute
-        array_path = mpdm.predict(epoch=1)
-        # learning = mpdm.get_debug_data()
+        path_tensor = mpdm.predict(epoch=1)
         # convert to ROS msgs and send out
-        outpath = array_to_ros_path(array_path)
-        ps.path.publish(outpath)
-        print("average time: ", time.time() - start)
+        ps.path.publish_from_tensor(path_tensor)
+        s, g, ct, co, p, pt = mpdm.get_learning_data()
+        lt = time.time() - start
+        ps.learning.publish(s, g, ct, co, p, pt, lt)
+        print("average time: ", lt)
         # rospy.sleep(0.1) # for debug
     exit()
