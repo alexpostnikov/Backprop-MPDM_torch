@@ -2,15 +2,14 @@
 import rospy
 from mpdm.msg import Learning
 from visualization_msgs.msg import MarkerArray, Marker
-from geometry_msgs.msg import Point, Pose, Vector3, PointStamped, PoseStamped, PoseWithCovarianceStamped, Quaternion
+from geometry_msgs.msg import Point, Pose, Vector3
 from std_msgs.msg import ColorRGBA
-import numpy as np
 from copy import deepcopy
 import math
 
 
 class Visualiser5:
-    def __init__(self, frame="map", with_text=False,):
+    def __init__(self, frame="map", with_text=False):
         self.with_text = with_text
         self.frame = frame
 
@@ -31,12 +30,6 @@ class Visualiser5:
         self.learning_color = ColorRGBA(0, 0, 1, 0.2)  # - blue
         self.covariance_color = ColorRGBA(0, 1, 0, 0.5)  # - green
         self.velocity_arrow_color = ColorRGBA(0, 1, 0, 1)  # - green
-        self.arrow_colors = [
-            ColorRGBA(0, 1, 0, 1),    # force 1 - green
-            ColorRGBA(0, 0, 1, 1),    # force 2 - blue
-            ColorRGBA(1, 0, 0, 1),    # force 3 - red
-            ColorRGBA(0, 0, 0, 1)     # force 4 - black
-        ]
 
         self.pub_peds = rospy.Publisher(
             "mpdm/vis/peds", MarkerArray, queue_size=1)
@@ -234,9 +227,6 @@ class Visualiser5:
         self.pub_propagation.publish(propagation_msg)
         self.pub_covariances.publish(covariances_msg)
         self.pub_learning.publish(learning_msg)
-
-    def yaw2q(self, yaw):
-        return Quaternion(x=0, y=0, z=np.sin(yaw/2), w=np.cos(yaw/2))
 
     def p_summ(self, p1, p2):
         return Point(x=p1.x+p2.x, y=p1.y+p2.y, z=p1.z+p2.z)
