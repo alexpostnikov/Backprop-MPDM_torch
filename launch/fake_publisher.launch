@@ -1,4 +1,6 @@
 <launch>
     <node pkg="mpdm" name="fake_publicator" type="fake_publicator.py" required="true" output="screen"></node>  
-    <include file="$(find mpdm)/launch/map_server.launch"/>
+    <node pkg="mpdm_visualiser" name="mpdm_visualiser" type="visualiser.py" required="true" output="screen"></node>  
+    <node pkg="map_server" name="map_server" type="map_server" required="false" output="screen" args="$(find mpdm)/resource/labmap.yaml"></node>  
+    <node pkg="tf" type="static_transform_publisher" name="map_to_world" args="0 0 0 0 0 0 1 world map 100" />
 </launch>
