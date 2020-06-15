@@ -43,7 +43,7 @@ def get_vov(p1, p2):
 
 
 def callback_update_state(msg, vars):
-    peds, robot_pose = vars
+    peds, robot_pose, pub_robot_goal = vars
     # founding out the best_epoch in learning
     best_epoch = msg.epochs[0]
     for epoch in msg.epochs:
@@ -56,6 +56,11 @@ def callback_update_state(msg, vars):
         dist = distance(agent.position, agent.goal)
         if dist<0.5:
             agent.goal = generate_position()
+            if agent.id.data is "0" or agent.id.data is "robot":
+                robot_goal = PoseStamped()
+                robot_goal.header.frame_id = agent.header.frame_id
+                robot_goal.pose = agent.goal
+                pub_robot_goal.publish(robot_goal)
     # founding out robot state and update
     for agent in peds:
         if agent.id.data is "0" or agent.id.data is "robot":
@@ -86,8 +91,10 @@ if __name__ == '__main__':
         peds.peds.append(ped)
 
     # some subs
+    pub_PoseStamped = rospy.Publisher(
+        "/move_base_simple/goal", PoseStamped, queue_size=1)
     sub_debug = rospy.Subscriber("mpdm/debug", Learning, callback_update_state,
-                                 queue_size=1, callback_args=(peds, robot_pose))
+                                 queue_size=1, callback_args=(peds, robot_pose, pub_PoseStamped))
 
     while not (rospy.is_shutdown()):
         robot_pose_pub.publish(robot_pose)
