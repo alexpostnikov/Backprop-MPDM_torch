@@ -7,6 +7,7 @@ from mpdm.msg import Ped, Peds, Learning
 import random
 import math
 
+
 def ps(x, y, yaw=0., frame="map"):
     ps = PoseStamped()
     ps.header.frame_id = frame
@@ -14,6 +15,7 @@ def ps(x, y, yaw=0., frame="map"):
     ps.pose.position.y = y
     ps.pose.orientation = yaw2q(yaw)
     return ps
+
 
 def distance(p1, p2):
     return ((p1.position.x - p2.position.x)**2+(p1.position.y - p2.position.y)**2)**0.5
@@ -54,7 +56,7 @@ def callback_update_state(msg, vars):
     # check achievieng goals and update their in that case
     for agent in peds:
         dist = distance(agent.position, agent.goal)
-        if dist<0.5:
+        if dist < 0.5:
             agent.goal = generate_position()
             if agent.id.data is "0" or agent.id.data is "robot":
                 robot_goal = PoseStamped()
@@ -65,7 +67,6 @@ def callback_update_state(msg, vars):
     for agent in peds:
         if agent.id.data is "0" or agent.id.data is "robot":
             robot_pose = agent.position
-
 
 
 if __name__ == '__main__':

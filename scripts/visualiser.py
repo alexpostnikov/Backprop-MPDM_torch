@@ -8,6 +8,7 @@ import numpy as np
 from copy import deepcopy
 import math
 
+
 class Visualiser5:
     def __init__(self, frame="map", with_text=False,):
         self.with_text = with_text
@@ -16,8 +17,9 @@ class Visualiser5:
         self.agent_scale = Vector3(0.3, 0.6, 1.8)
         self.goal_scale = Vector3(0.3, 0.6, 0.5)
         self.propagation_scale = Vector3(0.15, 0.3, 0.8)
+        self.learning_scale = Vector3(0.15, 0.3, 0.8)
         self.text_scale = Vector3(0, 0, 0.5)
-        self.first_arrow_scale = Vector3(0.008, 0.02, 0.02)
+        self.velocity_arrow_scale = Vector3(0.008, 0.02, 0.02)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
 
         self.robot_color = ColorRGBA(0, 0.9, 0, 1)  # - green
@@ -26,8 +28,9 @@ class Visualiser5:
         self.ped_goal_color = ColorRGBA(1, 1, 1, 1)  # - white
         self.text_color = ColorRGBA(0, 0, 0, 1)  # - black
         self.propagation_color = ColorRGBA(0, 0, 1, 0.5)  # - blue
+        self.learning_color = ColorRGBA(0, 0, 1, 0.2)  # - blue
         self.covariance_color = ColorRGBA(0, 1, 0, 0.5)  # - green
-
+        self.velocity_arrow_color = ColorRGBA(0, 1, 0, 1)  # - green
         self.arrow_colors = [
             ColorRGBA(0, 1, 0, 1),    # force 1 - green
             ColorRGBA(0, 0, 1, 1),    # force 2 - blue
@@ -55,6 +58,8 @@ class Visualiser5:
             "mpdm/debug", Learning, self.callback_learning, queue_size=1)
 
     def callback_learning(self, msg):
+        # TODO: add text on agents and goals
+
         peds_msg = MarkerArray()
         peds_goals_msg = MarkerArray()
         robot_msg = MarkerArray()
@@ -87,6 +92,21 @@ class Visualiser5:
         robot_marker.header.frame_id = self.frame
         robot_marker.pose.position.z = robot_marker.scale.z/2.
         robot_msg.markers.append(robot_marker)
+        # velocity arrow
+        robot_speed_marker = Marker(
+            id=id+100,
+            type=Marker.ARROW,
+            action=Marker.ADD,
+            scale=self.velocity_arrow_scale,
+            color=self.velocity_arrow_color,
+            pose=deepcopy(robot.position),
+            points=[deepcopy(robot.position.position), self.p_summ(
+                deepcopy(robot.position.position), robot.velocity.position)]
+        )
+        robot_speed_marker.header.frame_id = self.frame
+        robot_speed_marker.pose.orientation.w = 1.
+        robot_msg.markers.append(robot_speed_marker)
+
         robot_goal_marker = Marker(
             id=id,
             type=Marker.CUBE,
@@ -113,6 +133,20 @@ class Visualiser5:
             ped_marker.header.frame_id = self.frame
             ped_marker.pose.position.z = ped_marker.scale.z/2.
             peds_msg.markers.append(ped_marker)
+            # velocity arrow
+            ped_speed_marker = Marker(
+                id=id+1000,
+                type=Marker.ARROW,
+                action=Marker.ADD,
+                scale=self.velocity_arrow_scale,
+                color=self.velocity_arrow_color,
+                points=[deepcopy(ped.position.position), self.p_summ(
+                    deepcopy(ped.position.position), ped.velocity.position)]
+            )
+            ped_speed_marker.header.frame_id = self.frame
+            ped_speed_marker.pose.orientation.w = 1.
+            peds_msg.markers.append(ped_speed_marker)
+
             ped_goal_marker = Marker(
                 id=id,
                 type=Marker.CUBE,
@@ -142,6 +176,21 @@ class Visualiser5:
                 pped_marker.header.frame_id = self.frame
                 pped_marker.pose.position.z = pped_marker.scale.z/2.
                 propagation_msg.markers.append(pped_marker)
+                # velocity arrow
+                pped_speed_marker = Marker(
+                    id=id+100,
+                    type=Marker.ARROW,
+                    action=Marker.ADD,
+                    scale=self.velocity_arrow_scale,
+                    color=self.velocity_arrow_color,
+                    points=[deepcopy(ped.position.position), self.p_summ(
+                        deepcopy(ped.position.position), ped.velocity.position)]
+                )
+                pped_speed_marker.pose.orientation.w = 1.
+                pped_speed_marker.header.frame_id = self.frame
+
+                propagation_msg.markers.append(pped_speed_marker)
+
                 covariance_marker = Marker(
                     id=id,
                     type=Marker.SPHERE,
@@ -159,7 +208,23 @@ class Visualiser5:
                 covariance_marker.pose.position.z = covariance_marker.scale.z/2.
                 covariances_msg.markers.append(covariance_marker)
                 id += 1
-
+        # LEARNING
+        id = 0
+        for epoch in msg.epochs:
+            for step in epoch.steps:
+                for ped in step.peds:
+                    lped_marker = Marker(
+                        id=id,
+                        type=Marker.SPHERE,
+                        action=Marker.ADD,
+                        scale=self.learning_scale,
+                        color=self.learning_color,
+                        pose=deepcopy(ped.position)
+                    )
+                    lped_marker.header.frame_id = self.frame
+                    lped_marker.pose.position.z = lped_marker.scale.z/2.
+                    learning_msg.markers.append(lped_marker)
+                    id += 1
         # PUBLISH ALL MSGS
         self.pub_peds.publish(peds_msg)
         self.pub_peds_goals.publish(peds_goals_msg)
@@ -168,10 +233,13 @@ class Visualiser5:
         # self.pub_forces.publish(forces_msg)
         self.pub_propagation.publish(propagation_msg)
         self.pub_covariances.publish(covariances_msg)
-        # self.pub_learning.publish(learning_msg)
+        self.pub_learning.publish(learning_msg)
 
     def yaw2q(self, yaw):
         return Quaternion(x=0, y=0, z=np.sin(yaw/2), w=np.cos(yaw/2))
+
+    def p_summ(self, p1, p2):
+        return Point(x=p1.x+p2.x, y=p1.y+p2.y, z=p1.z+p2.z)
 
 
 if __name__ == '__main__':

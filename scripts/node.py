@@ -13,7 +13,7 @@ if __name__ == '__main__':
     rospy.init_node("mpdm")
     ps = RosPubSub()
     param = ROS_Param()
-    trans_model = HSFM(param) #SFM(param)
+    trans_model = HSFM(param)  # SFM(param)
     cov_model = SigmaNN()
     mpdm = MPDM(param, trans_model, cov_model)
     map = ps.map.update_static_map()
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         # update state
         robot, goal = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
-        # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map 
+        # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map
         mpdm.update_state(robot, peds, goal, goals, map)
         # compute
         path_tensor = mpdm.predict(epoch=10)
