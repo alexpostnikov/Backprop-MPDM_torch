@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import rospy
+import numpy as np
 from Param import ROS_Param
 from Utils.RosPubSub import RosPubSub
 from Utils.Utils import array_to_ros_path
@@ -36,7 +37,7 @@ if __name__ == '__main__':
         # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map 
         mpdm.update_state(robot, peds, goal, goals, map)
         # compute
-        path_tensor = mpdm.predict(epoch=1)
+        path_tensor = mpdm.predict(epoch=10)
         # convert to ROS msgs and send out
         ps.path.publish_from_tensor(path_tensor)
         s, g, ct, co, p, pt = mpdm.get_learning_data()

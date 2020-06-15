@@ -27,7 +27,7 @@ class MPDM:
     def is_init(self):
         return self.states is not None
 
-    def update_state(self, robot, peds, robot_goal, peds_goals, map=None):
+    def update_state(self, robot: np.ndarray, peds: np.ndarray, robot_goal: np.ndarray, peds_goals: np.ndarray, map=None):
         try:
             self.prev_states = self.states.copy()
         except:
@@ -64,6 +64,7 @@ class MPDM:
 
     def optimize(self, epochs):
         if self.states is None:
+            print("\t Warn: states is None!")
             return None
 
         max_cost = -math.inf
@@ -104,6 +105,7 @@ class MPDM:
             prob_cost.sum().backward()
             self.learning_stacked_cost.append(float(prob_cost.sum()))
             gradient = inner_data.grad
+            print ("gradient = ", gradient)
             if gradient is not None:
                 gradient[0, :] *= 0
                 with torch.no_grad():

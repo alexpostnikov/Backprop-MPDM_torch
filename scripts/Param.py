@@ -22,7 +22,7 @@ class Param:
 
         self.area_size = 10
         self.pedestrians_speed = 1.0
-        self.robot_init_pose = torch.tensor(([1.5,2.0]))
+        self.robot_init_pose = torch.tensor(([1.5, 2.0]))
         self.look_ahead_seconds = 4
 
         # mpdm params

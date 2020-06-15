@@ -50,14 +50,14 @@ def callback_update_state(msg, vars):
         if best_epoch.cost.data > epoch.cost.data:
             best_epoch = epoch
     # update current state on one step
-    peds = best_epoch.steps[1]
+    peds = best_epoch.steps[1].peds
     # check achievieng goals and update their in that case
-    for agent in peds.peds:
+    for agent in peds:
         dist = distance(agent.position, agent.goal)
         if dist<0.5:
             agent.goal = generate_position()
     # founding out robot state and update
-    for agent in peds.peds:
+    for agent in peds:
         if agent.id.data is "0" or agent.id.data is "robot":
             robot_pose = agent.position
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     # position
     robot_pose_pub = rospy.Publisher("/odom", PoseStamped, queue_size=1)
-    robot_pose = ps(10, 2)
+    robot_pose = ps(10, 1)
     peds_pub = rospy.Publisher("mpdm/peds", Peds, queue_size=1)
     peds = Peds()
     for i in range(num_peds):
@@ -79,6 +79,10 @@ if __name__ == '__main__':
         ped.id.data = str(i+1)
         ped.position = generate_position()
         ped.goal = generate_position()
+        p = Pose()
+        p.position.x = random.random()
+        p.position.y = random.random()
+        ped.velocity = p
         peds.peds.append(ped)
 
     # some subs
