@@ -99,8 +99,7 @@ class MPDM:
             self.learning_stacked_covariance.append(stacked_covariance)
 
             #### CALC GRAD ####
-            print ("cost = ", torch.sum(cost))
-            prev_cost = cost.detach().numpy()
+            print("cost = {cost:0.4f}".format(cost=torch.sum(cost).item()))
             prob_cost = cost * probability_matrix * goal_prob * vel_prob
             prob_cost.sum().backward()
 

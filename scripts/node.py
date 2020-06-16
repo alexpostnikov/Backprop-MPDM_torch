@@ -41,7 +41,7 @@ if __name__ == '__main__':
             else:
                 mpdm.update_state(robot, peds, goal, goals, map)
             # compute
-            path_tensor = mpdm.predict(epoch=5)
+            path_tensor = mpdm.predict(epoch=4)
             # convert to ROS msgs and send out
             ps.path.publish_from_tensor(path_tensor)
             s, g, ct, co, p, pt = mpdm.get_learning_data()
