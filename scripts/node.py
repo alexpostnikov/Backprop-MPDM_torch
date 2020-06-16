@@ -30,19 +30,21 @@ if __name__ == '__main__':
     rospy.loginfo("mpdm is initialized")
 
     while not rospy.is_shutdown():
-        start = time.time()
-        # update state
-        robot, goal = ps.robot.get_robot_state()
-        peds, goals = ps.peds.get_peds_state()
-        # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map
-        mpdm.update_state(robot, peds, goal, goals, map)
-        # compute
-        path_tensor = mpdm.predict(epoch=10)
-        # convert to ROS msgs and send out
-        ps.path.publish_from_tensor(path_tensor)
-        s, g, ct, co, p, pt = mpdm.get_learning_data()
-        lt = time.time() - start
-        ps.learning.publish(s, g, ct, co, p, pt, lt)
-        print("average time: ", lt)
-        # rospy.sleep(0.1) # for debug
+        print(ps.new_data_available())
+        if ps.new_data_available():
+            start = time.time()
+            # update state
+            robot, goal = ps.robot.get_robot_state()
+            peds, goals = ps.peds.get_peds_state()
+            # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map
+            mpdm.update_state(robot, peds, goal, goals, map)
+            # compute
+            path_tensor = mpdm.predict(epoch=5)
+            # convert to ROS msgs and send out
+            ps.path.publish_from_tensor(path_tensor)
+            s, g, ct, co, p, pt = mpdm.get_learning_data()
+            lt = time.time() - start
+            ps.learning.publish(s, g, ct, co, p, pt, lt)
+            print("average time: ", lt)
+        rospy.sleep(0.1) # for debug
     exit()

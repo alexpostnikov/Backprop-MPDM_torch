@@ -6,7 +6,7 @@ from Utils.Utils import yaw2q, q2yaw
 from mpdm.msg import Ped, Peds, Learning
 import random
 import math
-
+import time
 
 def ps(x, y, yaw=0., frame="map"):
     ps = PoseStamped()
@@ -20,14 +20,13 @@ def ps(x, y, yaw=0., frame="map"):
 def distance(p1, p2):
     return ((p1.position.x - p2.position.x)**2+(p1.position.y - p2.position.y)**2)**0.5
 
-
 def generate_position(area=[10., 10., 3.]):
     p = Pose()
     p.position.x = area[0]*random.random()
     p.position.y = area[1]*random.random()
     p.orientation = yaw2q(area[2]*(random.random()*2.-1.))
+    lock_timer = time.time()
     return p
-
 
 def get_vov(p1, p2):
     # velocity
@@ -45,18 +44,21 @@ def get_vov(p1, p2):
 
 
 def callback_update_state(msg, vars):
-    peds, robot_pose, pub_robot_goal = vars
+    # TODO: add shepotky consistency
+    peds, robot_pose, peds_pub, robot_pose_pub, pub_robot_goal = vars
     # founding out the best_epoch in learning
     best_epoch = msg.epochs[0]
     for epoch in msg.epochs:
         if best_epoch.cost.data > epoch.cost.data:
             best_epoch = epoch
     # update current state on one step
-    peds = best_epoch.steps[1].peds
+    peds.peds = best_epoch.steps[1].peds
     # check achievieng goals and update their in that case
-    for agent in peds:
+    # TODO: lock timer of 2s
+    for agent in peds.peds:
         dist = distance(agent.position, agent.goal)
         if dist < 0.5:
+            # lock
             agent.goal = generate_position()
             if agent.id.data is "0" or agent.id.data is "robot":
                 robot_goal = PoseStamped()
@@ -64,9 +66,11 @@ def callback_update_state(msg, vars):
                 robot_goal.pose = agent.goal
                 pub_robot_goal.publish(robot_goal)
     # founding out robot state and update
-    for agent in peds:
+    for agent in peds.peds:
         if agent.id.data is "0" or agent.id.data is "robot":
-            robot_pose = agent.position
+            robot_pose.pose = agent.position
+    robot_pose_pub.publish(robot_pose)
+
 
 
 if __name__ == '__main__':
@@ -94,10 +98,11 @@ if __name__ == '__main__':
     # some subs
     pub_PoseStamped = rospy.Publisher(
         "/move_base_simple/goal", PoseStamped, queue_size=1)
+
     sub_debug = rospy.Subscriber("mpdm/debug", Learning, callback_update_state,
-                                 queue_size=1, callback_args=(peds, robot_pose, pub_PoseStamped))
+                                 queue_size=1, callback_args=(peds, robot_pose, peds_pub, robot_pose_pub, pub_PoseStamped))
 
     while not (rospy.is_shutdown()):
-        robot_pose_pub.publish(robot_pose)
+        rospy.sleep(0.1)
         peds_pub.publish(peds)
-        rospy.sleep(0.05)
+        robot_pose_pub.publish(robot_pose)

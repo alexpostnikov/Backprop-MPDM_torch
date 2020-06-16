@@ -8,6 +8,8 @@ class PedestriansSub:
     def __init__(self, topic="mpdm/peds"):
         self.peds = None
         self.goals = None
+        self.previos_peds = None
+        self.previos_goals = None
         self.peds_sub = rospy.Subscriber(
             topic, Peds, self.callback, queue_size=1)
 
@@ -31,9 +33,16 @@ class PedestriansSub:
             goals.append([gx, gy, gyaw])
         self.peds = np.array(peds)
         self.goals = np.array(goals)
+        self.new_msg = True
+
 
     def get_peds_state(self):
         try:
+            self.new_msg = False
+            self.previos_peds = self.peds.copy()
+            self.previos_goals = self.goals.copy()
             return self.peds.copy(), self.goals.copy()
         except:
             return None, None
+    def new_data(self):
+        return (self.previos_peds != self.peds).any() or (self.previos_goals != self.goals).any()

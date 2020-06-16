@@ -19,6 +19,7 @@ class MPDM:
         self.learning_stacked_cost = []
         self.learning_stacked_covariance = []
         self.learning_stacked_policys = []
+        self.prev_goals = None
         ###### MODEL CREATING ######
         for lalala in range(self.param.number_of_layers):
             self.modules.append(Linear(transition_model, covariance_model))
