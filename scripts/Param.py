@@ -27,7 +27,7 @@ class Param:
 
         # mpdm params
         self.k = 2.3
-        self.DT = 0.2
+        self.DT = 0.4
         self.alpha = 10.66
 
         self.ped_mass = 60
@@ -46,7 +46,7 @@ class Param:
         self.b = 1 # 
         self.e = 0.001 # min speed fo blame
         self.robot_speed = 1.0
-        self.lr = 10**-4
+        self.lr = 10**-2
 
 
         # self.generateMatrices()        

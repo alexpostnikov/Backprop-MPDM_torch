@@ -9,7 +9,7 @@ class MPDM:
     def __init__(self, param, transition_model, covariance_model=None, policys=None):
         self.param = param
         self.map = None
-        self.policys = policys
+        self.policies = policys
         self.modules = []
         self.path = None
         self.goals = None
@@ -29,10 +29,7 @@ class MPDM:
         return self.states is not None
 
     def update_state(self, robot: np.ndarray, peds: np.ndarray, robot_goal: np.ndarray, peds_goals: np.ndarray, map=None):
-        try:
-            self.prev_states = self.states.copy()
-        except:
-            pass
+
         try:
             self.map = map
             states = [robot]
@@ -64,6 +61,7 @@ class MPDM:
         return self.path
 
     def optimize(self, epochs):
+        # torch.autograd.set_detect_anomaly(True)
         if self.states is None:
             print("\t Warn: states is None!")
             return None
@@ -76,37 +74,39 @@ class MPDM:
         self.learning_stacked_covariance = []
         self.learning_stacked_policys = []
         self.propogation_times = []
+        starting_poses = self.states.clone().detach()
         for epoch_numb in range(0, epochs):
             start = time.time()
-            inner_data = self.states.clone().detach()
+            inner_data = starting_poses.clone().detach()
             inner_data.requires_grad_(True)
             goals = self.goals.clone().detach()
             goals.requires_grad_(True)
+
             ### FORWARD PASS ####
-            # cost = torch.zeros(len(inner_data)-1, 1).requires_grad_(True)
             cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
             goal_prob[0] = 1.  # robot goal probability
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
             stacked_state = [inner_data.clone()]
-            inner_data, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
-                (inner_data, stacked_state, cost, stacked_covariance, goals, self.policys))
+            inner_data_, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
+                (inner_data, stacked_state, cost, stacked_covariance, goals, self.policies))
 
-            if self.policys is None:
+            if self.policies is None:
                 self.learning_stacked_policys.append("None")
             self.learning_stacked_state.append(torch.stack(stacked_state))
             # maybe need to append total_cost instead of cost
             self.learning_stacked_covariance.append(stacked_covariance)
 
             #### CALC GRAD ####
-
-            prob_cost = cost * (probability_matrix) * (goal_prob) * vel_prob
-            # torch.autograd.set_detect_anomaly(True)
+            print ("cost = ", torch.sum(cost))
+            prev_cost = cost.detach().numpy()
+            prob_cost = cost * probability_matrix * goal_prob * vel_prob
             prob_cost.sum().backward()
+
             self.learning_stacked_cost.append(float(prob_cost.sum()))
             gradient = inner_data.grad
-            print ("gradient = ", gradient)
+            # print ("gradient = ", gradient)
             if gradient is not None:
                 gradient[0, :] *= 0
                 with torch.no_grad():
@@ -115,15 +115,17 @@ class MPDM:
                     delta_vel = 100*self.param.lr * gradient[1:, 2:4]
                     delta_pose = torch.clamp(delta_pose, max=0.01, min=-0.01)
                     delta_vel = torch.clamp(delta_vel, max=0.02, min=-0.02)
-                    # starting_poses[1:, 0:2] = starting_poses[1:,
-                    #                                          0:2] + delta_pose
-                    # starting_poses[1:, 2:4] = starting_poses[1:,
-                    #                                          2:4] + delta_vel
+                    starting_poses[1:, 0:2] = starting_poses[1:,
+                                                             0:2] + delta_pose
+                    starting_poses[1:, 2:4] = starting_poses[1:,
+                                                             2:4] + delta_vel
                     goals.grad[0, :] = goals.grad[0, :] * 0
 
                     goals = (goals + torch.clamp(self.param.lr * 10 * goals.grad,
                                                  max=0.2, min=-0.2))  # .requires_grad_(True)
 
+            else:
+                print("gradient is None!")
             goals.requires_grad_(True)
 
             if goals.grad is not None:

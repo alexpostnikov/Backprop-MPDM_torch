@@ -15,3 +15,5 @@ logs/*
 validation_result.txt
 ./build*
 venv/*
+.idea/*
+*/.idea/*
