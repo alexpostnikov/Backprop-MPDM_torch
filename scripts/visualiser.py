@@ -92,7 +92,6 @@ class Visualiser5:
             action=Marker.ADD,
             scale=self.velocity_arrow_scale,
             color=self.velocity_arrow_color,
-            pose=deepcopy(robot.position),
             points=[deepcopy(robot.position.position), self.p_summ(
                 deepcopy(robot.position.position), robot.velocity.position)]
         )
