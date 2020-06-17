@@ -170,6 +170,10 @@ class Visualiser5:
                 pped_marker.pose.position.z = pped_marker.scale.z/2.
                 propagation_msg.markers.append(pped_marker)
                 # velocity arrow
+                small_ = deepcopy(ped.velocity.position)
+                small_.x *= 0.5
+                small_.y *= 0.5
+                small_.z *= 0.5
                 pped_speed_marker = Marker(
                     id=id+100,
                     type=Marker.ARROW,
@@ -177,7 +181,7 @@ class Visualiser5:
                     scale=self.velocity_arrow_scale,
                     color=self.velocity_arrow_color,
                     points=[deepcopy(ped.position.position), self.p_summ(
-                        deepcopy(ped.position.position), ped.velocity.position)]
+                        deepcopy(ped.position.position), small_)]
                 )
                 pped_speed_marker.pose.orientation.w = 1.
                 pped_speed_marker.header.frame_id = self.frame

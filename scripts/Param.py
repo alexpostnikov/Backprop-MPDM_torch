@@ -10,7 +10,7 @@ class Param:
         
         self.num_ped = num_ped
         self.optim_epochs = 4
-        self.number_of_layers = 10
+        self.number_of_layers = 12
 
         # DISCTIB COEFFICIENTS
         self.goal_std_coef = 4.5
@@ -46,7 +46,7 @@ class Param:
         self.b = 1 # 
         self.e = 0.001 # min speed fo blame
         self.robot_speed = 1.0
-        self.lr = 10**-2
+        self.lr = 10**1
 
 
         # self.generateMatrices()        

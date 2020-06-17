@@ -5,11 +5,13 @@ import numpy as np
 import math
 import time
 
+
+
 class MPDM:
-    def __init__(self, param, transition_model, covariance_model=None, policys=None):
+    def __init__(self, param, transition_model, covariance_model=None, policies=None):
         self.param = param
         self.map = None
-        self.policies = policys
+        self.policies = policies
         self.modules = []
         self.path = None
         self.goals = None
@@ -21,7 +23,7 @@ class MPDM:
         self.learning_stacked_policys = []
         self.prev_goals = None
         ###### MODEL CREATING ######
-        for lalala in range(self.param.number_of_layers):
+        for _ in range(self.param.number_of_layers):
             self.modules.append(Linear(transition_model, covariance_model))
         self.sequential = nn.Sequential(*self.modules)
 
@@ -74,32 +76,37 @@ class MPDM:
         self.learning_stacked_covariance = []
         self.learning_stacked_policys = []
         self.propogation_times = []
-        starting_poses = self.states.clone().detach()
+
+        for policy in self.policies:
+            sub_states, sub_goals = policy.apply(self.states.clone(), self.goals.clone())  # self.apply_policy(policy)
+            self.do_epochs(epochs, sub_goals, sub_states, policy)
+
+    def do_epochs(self, epochs, sub_goals, sub_states, policy):
+        starting_poses = sub_states.clone().detach()
         for epoch_numb in range(0, epochs):
             start = time.time()
             inner_data = starting_poses.clone().detach()
             inner_data.requires_grad_(True)
-            goals = self.goals.clone().detach()
+            goals = sub_goals.clone().detach()
             goals.requires_grad_(True)
 
             ### FORWARD PASS ####
-            cost = torch.zeros(len(inner_data-1), 1).requires_grad_(True)
+            cost = torch.zeros(len(inner_data - 1), 1).requires_grad_(True)
             probability_matrix, goal_prob, vel_prob = self.get_probability(
                 inner_data, goals, self.param)
             goal_prob[0] = 1.  # robot goal probability
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
             stacked_state = [inner_data.clone()]
-            inner_data_, stacked_state, cost, stacked_covariance, _, _ = self.sequential(
-                (inner_data, stacked_state, cost, stacked_covariance, goals, self.policies))
+            inner_data_, stacked_state, cost, stacked_covariance, _ = self.sequential(
+                (inner_data, stacked_state, cost, stacked_covariance, goals))
 
-            if self.policies is None:
-                self.learning_stacked_policys.append("None")
+            self.learning_stacked_policys.append(policy.name)
             self.learning_stacked_state.append(torch.stack(stacked_state))
             # maybe need to append total_cost instead of cost
             self.learning_stacked_covariance.append(stacked_covariance)
 
             #### CALC GRAD ####
-            print("cost = {cost:0.4f}".format(cost=torch.sum(cost).item()))
+
             prob_cost = cost * probability_matrix * goal_prob * vel_prob
             prob_cost.sum().backward()
 
@@ -111,13 +118,13 @@ class MPDM:
                 with torch.no_grad():
 
                     delta_pose = self.param.lr * gradient[1:, 0:2]
-                    delta_vel = 100*self.param.lr * gradient[1:, 2:4]
-                    delta_pose = torch.clamp(delta_pose, max=0.01, min=-0.01)
-                    delta_vel = torch.clamp(delta_vel, max=0.02, min=-0.02)
+                    delta_vel = 100 * self.param.lr * gradient[1:, 2:4]
+                    delta_pose = torch.clamp(delta_pose, max=0.1, min=-0.1)
+                    delta_vel = torch.clamp(delta_vel, max=0.2, min=-0.2)
                     starting_poses[1:, 0:2] = starting_poses[1:,
-                                                             0:2] + delta_pose
+                                              0:2] + delta_pose
                     starting_poses[1:, 2:4] = starting_poses[1:,
-                                                             2:4] + delta_vel
+                                              2:4] + delta_vel
                     goals.grad[0, :] = goals.grad[0, :] * 0
 
                     goals = (goals + torch.clamp(self.param.lr * 10 * goals.grad,
@@ -132,14 +139,7 @@ class MPDM:
             if inner_data.grad is not None:
                 inner_data.grad.data.zero_()
             self.propogation_times.append(time.time() - start)
-            # if starting_poses.grad is not None:
-            #     starting_poses.grad.data.zero_()
-        # learning out in:
-        # self.learning_stacked_state,
-        # self.goals,
-        # self.learning_stacked_cost,
-        # self.learning_stacked_covariance,
-        # self.policys
+        print("{policy} cost = {cost:0.4f}".format(policy=policy.name, cost=torch.sum(cost).item()))
 
     def get_learning_data(self):
         return self.learning_stacked_state, self.goals, self.learning_stacked_cost, self.learning_stacked_covariance, self.learning_stacked_policys, self.propogation_times
