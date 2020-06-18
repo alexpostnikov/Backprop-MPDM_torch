@@ -20,9 +20,11 @@ class Linear(nn.Module):
         state, stacked_state, cost, stacked_cov, goals = input
         robot_init_pose = stacked_state[0][0][:3]
         # state = 1 * input_state
+        
         rf, af = self.tm.calc_forces(state, goals)
         F = rf + af
         out = self.tm.pose_propagation(F, state.clone())
+
         current_cost = self.tm.calc_cost_function(
             goals[0], robot_init_pose, out)
         new_cost = cost + (current_cost.view(-1, 1))

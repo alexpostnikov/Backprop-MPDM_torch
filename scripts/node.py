@@ -16,11 +16,13 @@ if __name__ == '__main__':
     param = ROS_Param()
     trans_model = HSFM(param)  # SFM(param)
     cov_model = SigmaNN()
-    s = SoloPolicy()
-    l = LeftPolicy()
-    r = RightPolicy()
-    stop = StopPolicy()
-    mpdm = MPDM(param, trans_model, cov_model, policies=[s, l, r])
+    policies = []
+    policies.append(SoloPolicy())
+    # s = SoloPolicy()
+    # l = LeftPolicy()
+    # r = RightPolicy()
+    # stop = StopPolicy()
+    mpdm = MPDM(param, trans_model, cov_model, policies=policies)
     map = ps.map.update_static_map()
     rospy.sleep(1.0)
     while not (rospy.is_shutdown()):
@@ -46,7 +48,7 @@ if __name__ == '__main__':
             else:
                 mpdm.update_state(robot, peds, goal, goals, map)
             # compute
-            path_tensor = mpdm.predict(epoch=2)
+            path_tensor = mpdm.predict(epoch=1)
             # convert to ROS msgs and send out
             ps.path.publish_from_tensor(path_tensor)
             s, g, ct, co, p, pt = mpdm.get_learning_data()
