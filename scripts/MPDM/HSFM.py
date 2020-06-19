@@ -1,7 +1,7 @@
 import torch
 from MPDM.RepulsiveForces import RepulsiveForces
 import numpy as np
-
+import math
 class HSFM:
     def __init__(self, param, DT=0.4):
         self.param = param
@@ -49,7 +49,27 @@ class HSFM:
         # control input to HLM in Body frame
         # TODO:
         Ub = (self.Kb@(Rots.T.permute(2,0,1)@forces[:, :2].T)[0]).T #- self.kd * self.Vo
-        Ufi = -self.kfi*(ped_angles-force_angles) - self.kfig * ped_angular_speeds  # angular control input to HLM
+        # float ang1 = a2 - a1;
+        # float ang2 = ((a2 - a1) + 6.28);
+        # float ang3 = ((a2 - a1) - 6.28);
+        # float ang = fabs(ang1) < fabs(ang2) ? ang1 : ang2;
+        # ang = fabs(ang) < fabs(ang3) ? ang : ang3;
+        
+        # TODO find out how to made this easer
+        ang1 = ped_angles-force_angles
+        ang2 = (ped_angles-force_angles) + math.pi*2
+        ang3 = (ped_angles-force_angles) - math.pi*2
+        diff_angle = torch.zeros_like(ang1)
+        for n in range(len(diff_angle)):
+            if math.fabs(ang1[n]) < math.fabs(ang2[n]):
+                diff_angle[n] = ang1[n]
+            else:
+                diff_angle[n] = ang2[n]
+            if math.fabs(diff_angle[n]) > math.fabs(ang3[n]):
+                diff_angle[n] = ang3[n]
+        # TODO find out how to made this easer
+        
+        Ufi = -self.kfi*diff_angle - self.kfig * ped_angular_speeds  # angular control input to HLM
         return Ub, Ufi, Rots
 
     def pose_propagation(self, force, state):
