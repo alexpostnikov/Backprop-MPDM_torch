@@ -41,8 +41,6 @@ class RepulsiveForces():
                 if self.device is not None:
                     temp = temp.to(self.device)
                 self.aux1 = torch.cat((self.aux1, temp), dim=1)
-            # self.aux1.requires_grad_(True)
-            # self.aux1.retain_grad()
             '''
                 e.g. : state   [[1,  0]
                                 [2,  1]
@@ -73,7 +71,6 @@ class RepulsiveForces():
             self.aux = self.auxullary.t()
             if self.device is not None:
                 self.aux = self.aux.to(self.device)
-            # self.aux.retain_grad()
 
         if self.indexes is None:
             self.indexes = np.linspace(
@@ -85,12 +82,10 @@ class RepulsiveForces():
             self.aux2 = self.aux1.clone().t()
 
     def calc_rep_forces(self, state, velocity_state, param_lambda):
-        # calc_rep_forces(state[:, 0:2], alpha, ped_radius, ped_mass, betta, state[:,2:4], param_lambda)
         num_ped = state.shape[0]-1
         if num_ped != self.num_ped:
             self.change_num_of_ped(num_ped)
 
-        # self.change_num_of_ped(num_ped-1)
         pr = self.param.socForcePersonPerson["d"] * \
             torch.ones(num_ped+1, num_ped+1)
         pr[0, :] = self.param.socForceRobotPerson["d"]
@@ -106,8 +101,6 @@ class RepulsiveForces():
         alpha[:, 0] = self.param.socForceRobotPerson["A"]
 
         state_concated = state.clone().matmul(self.aux1)
-        # state_concated_t = torch.randn((5,10))
-
         state_concated_t = state.reshape(1, -1)
         for i in range(0, state.shape[0]-1):
             state_concated_t = torch.cat(
@@ -121,11 +114,6 @@ class RepulsiveForces():
         delta_pose = (-state_concated_t + state_concated) + 1e-6
 
         dist_squared = delta_pose ** 2
-        # used to calc delta_x**2 +delta_y**2 of each agent
-
-        # sqrt(delta_x**2 +delta_y**2) -> distance
-        # TODO: otherwise  when doing backprop: sqrt(0)' -> nan
-        # dist_squared += 0.0000001
         dist = (dist_squared.matmul(self.aux))
         # aka distance
         temp = torch.eye(dist.shape[0])
@@ -133,48 +121,12 @@ class RepulsiveForces():
             temp = temp.to(self.device)
         dist = torch.sqrt(dist) + 10000000 * \
             temp  # TODO: deal with 1/0,
-
-        # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
-        # according to Headed Social Force Model
-
         force_amplitude = alpha * torch.exp((pr - dist) / betta)
-
-        # formula(21) from `When Helbing Meets Laumond: The Headed Social Force Model`
-
-        # velocity_state_concated = velocity_state.clone().matmul(self.aux1)
-
-        #TODO: add anisotropy
-
-        # velocity_atan = torch.atan2(
-        #     velocity_state_concated[:, self.uneven_indexes], velocity_state_concated[:, self.even_indexes])
-        # # print ("delta_pose", delta_pose)
-        # dy = delta_pose[:, self.uneven_indexes]
-        # dx = delta_pose[:, self.even_indexes]
-        # deltapose_atan = torch.atan2(-dy, -dx)
-        # phi = ((velocity_atan - deltapose_atan) +
-        #        math.pi) % (2*math.pi) - math.pi
-        #
-        # anisotropy = param_lambda + (1 - param_lambda)*(1+torch.cos(phi))/2.
-        # anisotropy = anisotropy.matmul(self.auxullary)
         force = force_amplitude.matmul(
             self.auxullary)*(delta_pose / (dist).matmul(self.auxullary)) # * anisotropy
 
         force = (force * ((self.auxullary - 1) * -1))
         force = force.matmul(self.aux2)
-        # set angle across force vector
         yaw_zeros = torch.zeros(len(force), 1)
-        yaw_zeros[:, 0] = torch.acos(
-            torch.div(
-                force[:, 0], torch.sqrt(
-                    torch.pow(force[:, 0], 2)+torch.pow(force[:, 1], 2)
-                )
-            )
-        )
         force = torch.cat((force, yaw_zeros), dim=1)
-        for f in force:
-            if torch.isnan(f[2]):
-                f[2] = 0
-            if f[1] > 0:
-                f[2] = -f[2]
-
         return force

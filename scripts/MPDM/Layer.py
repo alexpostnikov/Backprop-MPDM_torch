@@ -21,8 +21,7 @@ class Linear(nn.Module):
         robot_init_pose = stacked_state[0][0][:3]
         # state = 1 * input_state
         
-        rf, af = self.tm.calc_forces(state, goals)
-        F = rf + af
+        F = self.tm.calc_forces(state, goals)
         out = self.tm.pose_propagation(F, state.clone())
 
         current_cost = self.tm.calc_cost_function(

@@ -28,6 +28,7 @@ def generate_position(area=[10., 10., 3.]):
     lock_timer = time.time()
     return p
 
+
 def get_vov(p1, p2):
     # velocity
     vel = p2.position
@@ -76,7 +77,7 @@ def callback_update_state(msg, vars):
 if __name__ == '__main__':
     rospy.init_node("fake_publicator")
     frame = "map"
-    num_peds = 2
+    num_peds = 5
 
     # position
     robot_pose_pub = rospy.Publisher("/odom", PoseStamped, queue_size=1)
