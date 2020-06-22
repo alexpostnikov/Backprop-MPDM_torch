@@ -20,7 +20,7 @@ def ps(x, y, yaw=0., frame="map"):
 def distance(p1, p2):
     return ((p1.position.x - p2.position.x)**2+(p1.position.y - p2.position.y)**2)**0.5
 
-def generate_position(area=[10., 10., 3.]):
+def generate_position(area=[5., 5., 3.]):
     p = Pose()
     p.position.x = area[0]*random.random()
     p.position.y = area[1]*random.random()
@@ -77,7 +77,7 @@ def callback_update_state(msg, vars):
 if __name__ == '__main__':
     rospy.init_node("fake_publicator")
     frame = "map"
-    num_peds = 5
+    num_peds = 3
 
     # position
     robot_pose_pub = rospy.Publisher("/odom", PoseStamped, queue_size=1)

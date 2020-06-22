@@ -8,8 +8,8 @@ class HSFM:
         self.rep_f = RepulsiveForces(self.param)
         self.DT = self.param.DT  # self.DT = DT
         # positive constant parameters
-        self.kf = 0.8  # forward
-        self.ko = 0.1  # ortogonal
+        self.kf = 1.0  # forward
+        self.ko = 0.2  # ortogonal
         self.kd = torch.zeros(2)  # velocity
         self.kd[1] = 1.0  # check this koef
         self.Kb = torch.zeros(2, 2)  # Body k matrix
@@ -23,7 +23,7 @@ class HSFM:
         self.alpha = 3.  # koef needed to calculate kfi and kfig
         self.kj = 0.02  # koef needed to calculate kfi and kfig
 
-        self.ped_mass = 70
+        self.ped_mass = 50
         self.ped_radius = 0.35
         # inercial moment of ped (m*r^2/2)
         self.I = torch.tensor(self.ped_mass*self.ped_radius**2.*0.5)
@@ -47,8 +47,11 @@ class HSFM:
         Rots[:, 1, 0] = sin_array[:]
         Rots[:, 1, 1] = cos_array[:]
         # control input to HLM in Body frame
-        # TODO:
-        Ub = (self.Kb@(Rots.T.permute(2,0,1)@forces[:, :2].T)[0]).T #- self.kd * self.Vo
+        # Ub = (self.Kb@(Rots.T.permute(2,0,1)@forces[:, :2].T)[0]).T #- self.kd * self.Vo
+        Ub = torch.zeros_like(forces[:,:2])
+        for i in range(len(forces)):
+            Ub[i] = self.Kb@(Rots[i].T@forces[i, :2]) #- self.kd * self.Vo
+
         # float ang1 = a2 - a1;
         # float ang2 = ((a2 - a1) + 6.28);
         # float ang3 = ((a2 - a1) - 6.28);
@@ -77,11 +80,14 @@ class HSFM:
 
         Vb = (1/self.ped_mass)*Ub  # calc linear velocities in Body frame
         # rotate that velocities into global frame
-        state[:, 3:5] = (Rots@Vb.T)[0].T
+        # TODO: product calculation issue
+        for i in range(len(state)):
+            state[i, 3:5] = Rots[i]@Vb[i] 
+        # state[:, 3:5] = (Rots@Vb.T)[0].T
 
         b = torch.zeros(len(state))  # inercial moment
         b[:] = 1/self.I  # inercial moment
-        state[:, 5] = b.matmul(Ufi)  # calc angular speed
+        state[:, 5] = b*Ufi  # calc angular speed
         
         state[:, :3] = state[:, :3] + state[:, 3:] * self.DT  # move
         return state
@@ -112,7 +118,8 @@ class HSFM:
         return B
 
     def calc_forces(self, state, goals):
-        rep_force = self.rep_f.calc_rep_forces(state[:, 0:2], state[:, 3:5], param_lambda=1)
+        rep_force = self.rep_f.calc_rep_forces(state[:, 0:2], state[:, 3:5], param_lambda=1)*3
+        # rep_force = torch.zeros_like(rep_force) # TODO: debug string
         attr_force = self.force_goal(state, goals)
         F = rep_force + attr_force
         #  calc force direction
