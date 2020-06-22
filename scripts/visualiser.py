@@ -14,7 +14,7 @@ class Visualiser5:
         self.frame = frame
 
         self.agent_scale = Vector3(0.3, 0.6, 1.8)
-        self.goal_scale = Vector3(0.3, 0.6, 0.5)
+        self.goal_scale = Vector3(0.2, 0.35, 0.2)
         self.propagation_scale = Vector3(0.15, 0.3, 0.8)
         self.learning_scale = Vector3(0.15, 0.3, 0.8)
         self.text_scale = Vector3(0, 0, 0.5)
@@ -26,8 +26,8 @@ class Visualiser5:
         self.ped_color = ColorRGBA(0.9, 0.9, 0.9, 1)  # - white
         self.ped_goal_color = ColorRGBA(1, 1, 1, 1)  # - white
         self.text_color = ColorRGBA(0, 0, 0, 1)  # - black
-        self.propagation_color = ColorRGBA(0, 0, 1, 0.5)  # - blue
-        self.learning_color = ColorRGBA(0, 0, 1, 0.2)  # - blue
+        self.propagation_color = ColorRGBA(0, 0, 1, 0.3)  # - blue
+        self.learning_color = ColorRGBA(0, 0, 1, 0.1)  # - blue
         self.covariance_color = ColorRGBA(0, 1, 0, 0.5)  # - green
         self.velocity_arrow_color = ColorRGBA(0, 1, 0, 1)  # - green
 

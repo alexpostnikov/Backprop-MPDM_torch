@@ -73,6 +73,7 @@ class HSFM:
         # TODO find out how to made this easer
         
         Ufi = -self.kfi*diff_angle - self.kfig * ped_angular_speeds  # angular control input to HLM
+        Ub[:, 0] = torch.clamp(Ub[:, 0].clone(), min=0)
         return Ub, Ufi, Rots
 
     def pose_propagation(self, force, state):

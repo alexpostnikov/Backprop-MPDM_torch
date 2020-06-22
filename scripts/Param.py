@@ -9,8 +9,8 @@ class Param:
         
         
         self.num_ped = num_ped
-        self.optim_epochs = 4
-        self.number_of_layers = 12
+        self.optim_epochs = 1
+        self.number_of_layers = 10
 
         # DISCTIB COEFFICIENTS
         self.goal_std_coef = 4.5
