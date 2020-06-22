@@ -1,4 +1,4 @@
-import torch
+
 import logging
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped, PoseArray, Pose, Twist, Quaternion
@@ -79,10 +79,13 @@ def quaternion_to_euler(x, y, z, w):
         return X, Y, Z
 
 class Utils:
+
     def __init__(self):
+
         pass
 
     def check_poses_not_the_same(self, pose1, pose2, grad1, grad2, lr):
+        import torch
         counter = 100
         while torch.norm(pose1 - pose2) < 0.6 and counter:
             pose1 = pose1 - lr/4. * grad1
