@@ -47,12 +47,12 @@ if __name__ == '__main__':
         else:
             mpdm.update_state(robot, peds, goal, goals, map)
         # compute
-        path_tensor = mpdm.predict(epoch=3)
+        path_tensor = mpdm.predict(epoch=1)
         # convert to ROS msgs and send out
         ps.path.publish_from_tensor(path_tensor)
         s, g, ct, co, p, pt = mpdm.get_learning_data()
         lt = time.time() - start
         ps.learning.publish(s, g, ct, co, p, pt, lt)
         print("average time: ", lt)
-        rospy.sleep(0.1) # for debug
+        rospy.sleep(0.1)  # for debug
     exit()

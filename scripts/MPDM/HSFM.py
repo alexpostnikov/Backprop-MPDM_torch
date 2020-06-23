@@ -104,8 +104,9 @@ class HSFM:
             # torch.ones(robot_pose.shape).requires_grad_(True)
             PG = torch.tensor([0.01])
         else:
-            PG = (robot_pose - robot_init_pose).dot((-robot_init_pose +
-                                                     robot_goal) / torch.norm(-robot_init_pose + robot_goal))
+            pass
+        PG = (robot_pose[:2] - robot_init_pose[:2]).dot((-robot_init_pose[:2] +
+                                                         robot_goal[:2]) / torch.norm(robot_pose[:2] - robot_init_pose[:2]))
 
         # B = torch.zeros(len(agents_state), 1, requires_grad=False)
 
