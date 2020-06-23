@@ -2,6 +2,7 @@ import torch
 from MPDM.RepulsiveForces import RepulsiveForces
 import numpy as np
 import math
+
 class HSFM:
     def __init__(self, param, DT=0.4):
         self.param = param
@@ -18,10 +19,10 @@ class HSFM:
         self.Vo = torch.tensor(5.0)  # pedestrians_goal_speed
         self.Vor = torch.tensor(5.0) # robot_goal_speed
 
-        self.kfi = 0.8  # angular control
+        self.kfi = 4*0.8  # angular control
         self.kfig = 0.05  # angular speed control
-        self.alpha = 3.  # koef needed to calculate kfi and kfig
-        self.kj = 0.02  # koef needed to calculate kfi and kfig
+        self.alpha = 3.  # coef needed to calculate kfi and kfig
+        self.kj = 0.02  # coef needed to calculate kfi and kfig
 
         self.ped_mass = 50
         self.ped_radius = 0.35
