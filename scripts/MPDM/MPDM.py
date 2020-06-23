@@ -97,8 +97,8 @@ class MPDM:
             goal_prob[0] = 1.  # robot goal probability
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
             stacked_state = [inner_data.clone()]
-            inner_data_, stacked_state, cost, stacked_covariance, _ = self.sequential(
-                (inner_data, stacked_state, cost, stacked_covariance, goals))
+            inner_data_, stacked_state, cost, stacked_covariance, _,_ = self.sequential(
+                (inner_data, stacked_state, cost, stacked_covariance, self.goals, goals))
 
             self.learning_stacked_policys.append(policy.name)
             self.learning_stacked_state.append(torch.stack(stacked_state))

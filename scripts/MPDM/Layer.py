@@ -9,19 +9,21 @@ class Linear(nn.Module):
         super(Linear, self).__init__()
         self.tm = transition_model
         self.cpm = covariance_prediction_model
+
         if self.cpm.model is None:
             print("WARN: covariance prediction model not found")
 
     def forward(self, input):
  
-#  robot_init_pose = inner_data[0, :3]
+        #  robot_init_pose = inner_data[0, :3]
         # TODO put state(remove) into stacked_state
         # state, cost, stacked_cov, stacked_state, stacked_state_vis, goals, robot_init_pose, policy = input
-        state, stacked_state, cost, stacked_cov, goals = input
+
+        state, stacked_state, cost, stacked_cov, goals, sub_goal = input
         robot_init_pose = stacked_state[0][0][:3]
         # state = 1 * input_state
         
-        F = self.tm.calc_forces(state, goals)
+        F = self.tm.calc_forces(state, sub_goal)
         out = self.tm.pose_propagation(F, state.clone())
 
         current_cost = self.tm.calc_cost_function(
@@ -35,4 +37,5 @@ class Linear(nn.Module):
             cov = self.cpm.calc_covariance(
                 stacked_cov[-1], stacked_state[-2][:, :2].clone().detach().numpy(), stacked_state[-1][:, :2].clone().detach().numpy())
         stacked_cov.append(cov)
-        return out, stacked_state, new_cost, stacked_cov, goals
+        return out, stacked_state, new_cost, stacked_cov, goals, sub_goal
+
