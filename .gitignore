@@ -17,3 +17,5 @@ validation_result.txt
 venv/*
 .idea/*
 */.idea/*
+*.pkl
+*.zip
