@@ -6,6 +6,74 @@ import torch
 import random
 import scipy.spatial
 import scipy.io
+import dill 
+
+class Dataset_from_pkl(Dataset):
+    def __init__(self, data_folder, data_files="all", train = True, test = False, validate = False):
+        super().__init__()
+        self.train_dataset = torch.tensor([])
+        file_list = []
+        if "all" not in data_files:
+            file_list = data_files
+        else: 
+            dd = os.listdir(data_folder)
+            for file in dd:
+                if train and "train" in file:
+                    file_list.append(file)
+                if test and "test" in file:
+                    file_list.append(file)
+                if validate and "val" in file:
+                    file_list.append(file)
+        data_dict = [data_folder+"/"+x for x in file_list]
+        self.data = {}
+        for file_name in data_dict:
+            with open(file_name, 'rb') as f:
+                print("loading "+file_name)
+                self.data[f] = dill.load(f)
+        print()
+            # if train and "train" in f:
+            #     train_env = dill.load(f, encoding='latin1')
+        
+        # self.data = 
+        # self.data
+        # self.data=data
+        # self.name=name
+
+        # self.mean= mean
+        # self.std = std
+
+    def __len__(self):
+        return self.data['src'].shape[0]
+
+
+    def __getitem__(self,index):
+        return {'src':torch.Tensor(self.data['src'][index]),
+                'trg':torch.Tensor(self.data['trg'][index]),
+                'frames':self.data['frames'][index],
+                'seq_start':self.data['seq_start'][index],
+                'dataset':self.data['dataset'][index],
+                'peds': self.data['peds'][index],
+                }
+
+
+
+if __name__ == "__main__":
+    Dataset =  Dataset_from_pkl("/home/pazuzu/catkin_ws/src/Backprop-MPDM_torch/scripts/NN/datasets/processed")
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def create_dataset(dataset_folder,dataset_name,val_size,gt,horizon,delim="\t",train=True,eval=False,verbose=False):
 
@@ -120,7 +188,7 @@ def create_dataset(dataset_folder,dataset_name,val_size,gt,horizon,delim="\t",tr
 
 
 
-class IndividualTfDataset(Dataset):
+    class IndividualTfDataset(Dataset):
     def __init__(self,data,name,mean,std):
         super(IndividualTfDataset,self).__init__()
 
