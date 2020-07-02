@@ -161,5 +161,9 @@ class HSFM:
         v_desired_x_y_yaw[:, 0:2] = desired_direction[:,0:2] * self.Vo / norm_direction_lin[:, 0:2]
         
         # print (pedestrians_speed)
-        F_attr = k * (v_desired_x_y_yaw - input_state[:, 3:]*self.DT)
+        if input_state.shape[1]>2:
+            F_attr = k * (v_desired_x_y_yaw - input_state[:, 3:]*self.DT)
+        else:
+            # TODO: check calculation for shape(Nx2)
+            F_attr = k * (v_desired_x_y_yaw - input_state[:]*self.DT)
         return F_attr
