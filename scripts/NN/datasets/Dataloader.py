@@ -103,7 +103,7 @@ class Dataset_from_pkl(Dataset):
         """
         indexes = []
         for person in timestamp_data:
-            indexes.append(person[0])
+            indexes.append(person[0].item())
         return set(indexes)
 
     def get_dataset_from_index(self, data_index: int):

@@ -183,3 +183,4 @@ def print_batch_errors(batch_errors_list, namespace, curr_iter):
             if len(metric_batch_error) > 0:
                 print(f"{curr_iter}: {node_type.name}/{namespace}/{metric}_mean", np.mean(metric_batch_error))
                 print(f"{curr_iter}: {node_type.name}/{namespace}/{metric}_median", np.median(metric_batch_error))
+

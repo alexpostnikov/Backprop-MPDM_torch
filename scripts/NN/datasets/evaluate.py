@@ -7,6 +7,8 @@ import torch
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from scipy.stats import gaussian_kde
+from Dataloader import Dataset_from_pkl
 
 sys.path.append("../../")
 import Utils
@@ -32,32 +34,118 @@ def load_model(model_path):
     print('Loaded!\n')
     return model
 
-if __name__ == "__main__":
-    with open(args.data, 'rb') as f:
-        dataset = dill.load(f)[0]
+def calc_ade(predicted_trajs, gt_traj):
+    error = np.linalg.norm(predicted_trajs - gt_traj, axis=-1)
+    ade = np.mean(error, axis=-1)
+    return ade
 
-    model = load_model(args.model)
-    ph = 12       #prediction_horizon
-    max_hl = 8    #maximum_history_length
-    # dataloader =  TODO: insert dataloared here
-    with torch.no_grad():
-        ############### MOST LIKELY ###############
-        eval_ade_batch_errors = np.array([])
-        eval_fde_batch_errors = np.array([])
-        print("-- Evaluating GMM Grid Sampled (Most Likely)")
-        for i, data in enumerate(dataset):
-            print(f"---- Evaluating data {i + 1}/{len(dataset)}")
-            timesteps = np.arange(data)
-            predictions = model.predict(data, timesteps, ph,num_samples=1,
-                                           min_history_timesteps=7,
-                                           min_future_timesteps=12,
-                                           )
-            batch_error_arr = Utils.compute_batch_statistics(predictions,
-                                                                   DT,
-                                                                   max_hl=max_hl,
-                                                                   ph=ph,
-                                                                   prune_ph_to_future=True,
-                                                                   kde=False)
+def calc_fde(predicted, gt):
+    final_error = np.linalg.norm(predicted - gt)
+    return final_error
+
+def calc_kde_nll(predicted_trajs, gt_traj):
+    kde_ll = 0.
+    log_pdf_lower_bound = -20
+    num_timesteps = gt_traj.shape[0]
+
+    for timestep in range(num_timesteps):
+        try:
+            kde = gaussian_kde(predicted_trajs[timestep].T)
+            pdf = np.clip(kde.logpdf(gt_traj[timestep].T), a_min=log_pdf_lower_bound, a_max=None)[0]
+            kde_ll += pdf / (num_timesteps)
+        except np.linalg.LinAlgError:
+            kde_ll = np.nan
+
+    return -kde_ll
+
+
+def is_data_enough(data):
+    for step in data:
+        for coord in step:
+            if coord == 0:
+                return False
+    return True
+    
+
+def compare_prediction_gt(prediction, gt):
+    # gt         -> 1, num_ped, 20, 2
+    # prediction -> 1, num_ped, 12, 2
+    error_dict =  {'id':list(),'ade': list(), 'fde': list(), 'kde': list()}
+    for num_ped in range(len(prediction)):
+        # check data
+        
+        if not is_data_enough(gt[num_ped]):
+            continue
+        # id 
+        error_dict['id'].append(num_ped)
+        # ade
+        ade = calc_ade(prediction[num_ped],gt[num_ped,8:])
+        error_dict['ade'].append(ade)
+        # fde
+        fde = calc_fde(prediction[num_ped,-1],gt[num_ped,-1])
+        error_dict['fde'].append(fde)
+        # kde_nll
+        kde = calc_kde_nll(prediction[num_ped],gt[num_ped,8:])
+        error_dict['kde'].append(kde)
+    # error_dict -> {'id':[num_ped],'ade': [num_ped], 'fde': [num_ped], 'kde': [num_ped]}
+    return error_dict
+
+
+
+if __name__ == "__main__":
+    import sys
+    from Param import ROS_Param
+    param = ROS_Param()
+    dataset = Dataset_from_pkl("/home/pazuzu/catkin_ws/src/Backprop-MPDM_torch/scripts/NN/datasets/processed/with_forces/", data_files=["eth_train.pkl"])
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1)
+    for batch in dataloader:
+        num_peds = batch.shape[1]
+        print(batch.shape)
+        # # create gt
+        gt = batch[0,:,:,2:4]
+        # # create prediction
+        pred = torch.rand(num_peds,12,2)
+        errors_dict = compare_prediction_gt(pred,gt)
+        print(errors_dict)
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+# if __name__ == "__main__":
+#     with open(args.data, 'rb') as f:
+#         dataset = dill.load(f)[0]
+
+#     model = load_model(args.model)
+#     ph = 12       #prediction_horizon
+#     max_hl = 8    #maximum_history_length
+#     # dataloader =  TODO: insert dataloared here
+#     with torch.no_grad():
+#         ############### MOST LIKELY ###############
+#         eval_ade_batch_errors = np.array([])
+#         eval_fde_batch_errors = np.array([])
+#         print("-- Evaluating GMM Grid Sampled (Most Likely)")
+#         for i, data in enumerate(dataset):
+#             print(f"---- Evaluating data {i + 1}/{len(dataset)}")
+#             timesteps = np.arange(data)
+#             predictions = model.predict(data, timesteps, ph,num_samples=1,
+#                                            min_history_timesteps=7,
+#                                            min_future_timesteps=12,
+#                                            )
+#             batch_error_arr = Utils.compute_batch_statistics(predictions,
+#                                                                    DT,
+#                                                                    max_hl=max_hl,
+#                                                                    ph=ph,
+#                                                                    prune_ph_to_future=True,
+#                                                                    kde=False)
 
             # predictions = eval_stg.predict(scene,
             #                                timesteps,
@@ -77,14 +165,14 @@ if __name__ == "__main__":
             #                                                        prune_ph_to_future=True,
             #                                                        kde=False)
 
-            eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_arr['ade']))
-            eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_arr['fde']))
+        #     eval_ade_batch_errors = np.hstack((eval_ade_batch_errors, batch_error_arr['ade']))
+        #     eval_fde_batch_errors = np.hstack((eval_fde_batch_errors, batch_error_arr['fde']))
 
-        print(np.mean(eval_fde_batch_errors))
-        pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'ml'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_most_likely.csv'))
-        pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'ml'}
-                     ).to_csv(os.path.join(args.output_path, args.output_tag + '_fde_most_likely.csv'))
+        # print(np.mean(eval_fde_batch_errors))
+        # pd.DataFrame({'value': eval_ade_batch_errors, 'metric': 'ade', 'type': 'ml'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_ade_most_likely.csv'))
+        # pd.DataFrame({'value': eval_fde_batch_errors, 'metric': 'fde', 'type': 'ml'}
+        #              ).to_csv(os.path.join(args.output_path, args.output_tag + '_fde_most_likely.csv'))
 
 
         ############### MODE Z ###############
