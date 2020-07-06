@@ -47,14 +47,16 @@ def calc_kde_nll(predicted_trajs, gt_traj):
     kde_ll = 0.
     log_pdf_lower_bound = -20
     num_timesteps = gt_traj.shape[0]
+    num_batches = predicted_trajs.shape[0]
 
-    for timestep in range(num_timesteps):
-        try:
-            kde = gaussian_kde(predicted_trajs[timestep].T)
-            pdf = np.clip(kde.logpdf(gt_traj[timestep].T), a_min=log_pdf_lower_bound, a_max=None)[0]
-            kde_ll += pdf / (num_timesteps)
-        except np.linalg.LinAlgError:
-            kde_ll = np.nan
+    for batch_num in range(num_batches):
+        for timestep in range(num_timesteps):
+            try:
+                kde = gaussian_kde(predicted_trajs[batch_num, :, timestep].T)
+                pdf = np.clip(kde.logpdf(gt_traj[timestep].T), a_min=log_pdf_lower_bound, a_max=None)[0]
+                kde_ll += pdf / (num_timesteps * num_batches)
+            except np.linalg.LinAlgError:
+                kde_ll = np.nan
 
     return -kde_ll
 
@@ -85,8 +87,9 @@ def compare_prediction_gt(prediction, gt):
         fde = calc_fde(prediction[num_ped,-1],gt[num_ped,-1])
         error_dict['fde'].append(fde)
         # kde_nll
-        kde = calc_kde_nll(prediction[num_ped],gt[num_ped,8:])
-        error_dict['kde'].append(kde)
+    # kde = calc_kde_nll(prediction[num_ped],gt[num_ped,8:])
+    # error_dict['kde'].append(kde)
+    
     # error_dict -> {'id':[num_ped],'ade': [num_ped], 'fde': [num_ped], 'kde': [num_ped]}
     return error_dict
 
