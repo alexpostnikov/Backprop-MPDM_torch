@@ -86,7 +86,8 @@ class MPDM:
             sub_states, sub_goals = policy.apply(self.states.clone(), self.goals.clone())  # self.apply_policy(policy)
             self.do_epochs(epochs, sub_goals, sub_states, policy)
 
-    def do_epochs(self, epochs, sub_goals, sub_states, policy):
+    def do_epochs(self, epochs, sub_goals, sub_states, policy, additional_solo_cost = -0.1):
+        # 
 
         starting_poses = sub_states.clone().detach()
 
@@ -120,6 +121,10 @@ class MPDM:
             prob_cost.sum().backward()
 
             self.learning_stacked_cost.append(float(prob_cost.sum()))
+            # TODO: Works better with this hack. it needed to understanding
+            if "solo" in policy.name:
+                self.learning_stacked_cost[-1]+=additional_solo_cost
+            # 
             gradient = inner_data.grad
             # print ("gradient = ", gradient)
 
