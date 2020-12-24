@@ -15,11 +15,12 @@ if __name__ == '__main__':
     ps = RosPubSub()
     param = ROS_Param()
     trans_model = HSFM(param)  # SFM(param)
-    cov_model = SigmaNN()
+    # cov_model = SigmaNN()
+    cov_model = None
     policies = []
     policies.append(SoloPolicy())
-    policies.append(LeftPolicy())
-    policies.append(RightPolicy())
+    # policies.append(LeftPolicy())
+    # policies.append(RightPolicy())
     # policies.append(StopPolicy())
     mpdm = MPDM(param, trans_model, cov_model, policies=policies)
     map = ps.map.update_static_map()
@@ -50,9 +51,10 @@ if __name__ == '__main__':
         path_tensor = mpdm.predict(epoch=1)
         # convert to ROS msgs and send out
         ps.path.publish_from_tensor(path_tensor)
-        s, g, ct, co, p, pt = mpdm.get_learning_data()
+        s, g, ct, co, p, pt, f = mpdm.get_learning_data()
         lt = time.time() - start
-        ps.learning.publish(s, g, ct, co, p, pt, lt)
-        print("average time: ", lt)
+        ps.learning.publish(s, g, ct, co, p, pt, lt, f)
+        # NOTE: return for performance debug
+        # print("average time: ", lt)
         rospy.sleep(0.1)  # for debug
     exit()

@@ -5,7 +5,7 @@ import numpy as np
 import math
 import time
 from typing import Tuple, Optional
-
+from Utils.RosMapTools import get_area
 
 
 class MPDM:
@@ -22,6 +22,7 @@ class MPDM:
         self.learning_stacked_cost = []
         self.learning_stacked_covariance = []
         self.learning_stacked_policys = []
+        self.learning_stacked_forces = []
         self.prev_goals = None
         self.prob_calculator = ProbabilityCalculator()
         ###### MODEL CREATING ######
@@ -81,6 +82,7 @@ class MPDM:
         self.learning_stacked_covariance = []
         self.learning_stacked_policys = []
         self.propogation_times = []
+        self.learning_stacked_forces = []
 
         for policy in self.policies:
             sub_states, sub_goals = policy.apply(self.states.clone(), self.goals.clone())  # self.apply_policy(policy)
@@ -106,14 +108,23 @@ class MPDM:
             #     inner_data, goals, self.param)
             # goal_prob[0] = 1.  # robot goal probability
             stacked_covariance = np.zeros((1, len(inner_data), 2)).tolist()
+            stacked_forces = np.zeros((1, 3,len(inner_data),3)).tolist()#[ster,force_type,ped,xyz]
             stacked_state = [inner_data.clone()]
-            inner_data_, stacked_state, cost, stacked_covariance, _,_ = self.sequential(
-                (inner_data, stacked_state, cost, stacked_covariance, self.goals, goals))
+            map_data = None
+            if self.map is not None:
+                point = starting_poses[0,0:2].tolist() # position of center
+                area = 1.0 # area in meters
+                map_data, resolution = get_area(self.map, point, area)
+                map_origin = None # None == take robot position as center of map
+            inner_data_, stacked_state, cost, stacked_covariance, stacked_forces, _,_,_,_,_ = self.sequential(
+                (inner_data, stacked_state, cost, stacked_covariance, stacked_forces, self.goals, goals, map_data, resolution, map_origin))
 
             self.learning_stacked_policys.append(policy.name)
             self.learning_stacked_state.append(torch.stack(stacked_state))
             # maybe need to append total_cost instead of cost
             self.learning_stacked_covariance.append(stacked_covariance)
+            self.learning_stacked_forces.append(stacked_forces)
+
 
             #### CALC GRAD ####
 
@@ -154,10 +165,11 @@ class MPDM:
             if inner_data.grad is not None:
                 inner_data.grad.data.zero_()
             self.propogation_times.append(time.time() - start)
-        print("{policy} cost = {cost:0.4f}".format(policy=policy.name, cost=torch.sum(cost).item()))
+        # NOTE: return for policy debug
+        # print("{policy} cost = {cost:0.4f}".format(policy=policy.name, cost=torch.sum(cost).item()))
 
     def get_learning_data(self):
-        return self.learning_stacked_state, self.goals, self.learning_stacked_cost, self.learning_stacked_covariance, self.learning_stacked_policys, self.propogation_times
+        return self.learning_stacked_state, self.goals, self.learning_stacked_cost, self.learning_stacked_covariance, self.learning_stacked_policys, self.propogation_times, self.learning_stacked_forces
 
     # TODO: go out to fake_publicator
     def get_probability(self, inner_data: torch.Tensor, goals: torch.Tensor, param: object) -> Tuple[torch.Tensor]:

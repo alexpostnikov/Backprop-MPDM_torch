@@ -19,6 +19,7 @@ class Visualiser5:
         self.learning_scale = Vector3(0.15, 0.3, 0.8)
         self.text_scale = Vector3(0, 0, 0.5)
         self.velocity_arrow_scale = Vector3(0.008, 0.02, 0.02)
+        self.force_arrow_scale = Vector3(0.008, 0.02, 0.02)
         self.arrow_scale = Vector3(0.02, 0.1, 0.1)
 
         self.robot_color = ColorRGBA(0, 0.9, 0, 1)  # - green
@@ -30,6 +31,9 @@ class Visualiser5:
         self.learning_color = ColorRGBA(0, 0, 1, 0.1)  # - blue
         self.covariance_color = ColorRGBA(0, 1, 0, 0.5)  # - green
         self.velocity_arrow_color = ColorRGBA(0, 1, 0, 1)  # - green
+        self.force_repulsive_arrow_color = ColorRGBA(1, 0.1, 0.1, 1)  # - red
+        self.force_goal_arrow_color = ColorRGBA(0.1, 0.1, 1, 1)  # - blue
+        self.force_wall_arrow_color = ColorRGBA(0.1, 1, 0.1, 1)  # - green
 
         self.pub_peds = rospy.Publisher(
             "mpdm/vis/peds", MarkerArray, queue_size=1)
@@ -110,7 +114,8 @@ class Visualiser5:
         robot_goal_marker.header.frame_id = self.frame
         robot_goal_marker.pose.position.z = robot_goal_marker.scale.z/2.
         robot_goal_msg.markers.append(robot_goal_marker)
-        # PEDS, PEDS GOALS
+
+        # PEDS
         for ped in best_epoch.steps[0].peds:
             if ped.id.data is "0" or ped.id.data is "robot":
                 continue  # just skip the robot
@@ -126,8 +131,9 @@ class Visualiser5:
             ped_marker.pose.position.z = ped_marker.scale.z/2.
             peds_msg.markers.append(ped_marker)
             # velocity arrow
+            id = id+1000
             ped_speed_marker = Marker(
-                id=id+1000,
+                id=id,
                 type=Marker.ARROW,
                 action=Marker.ADD,
                 scale=self.velocity_arrow_scale,
@@ -138,7 +144,8 @@ class Visualiser5:
             ped_speed_marker.header.frame_id = self.frame
             ped_speed_marker.pose.orientation.w = 1.
             peds_msg.markers.append(ped_speed_marker)
-
+           # goal markers
+            id = id+1000
             ped_goal_marker = Marker(
                 id=id,
                 type=Marker.CUBE,
@@ -151,9 +158,7 @@ class Visualiser5:
             ped_goal_marker.pose.position.z = ped_goal_marker.scale.z/2.
             peds_goals_msg.markers.append(ped_goal_marker)
             id += 1
-        # FORCES
-        # TODO: add this data into msgs
-        # PROPAGATION and COVARIANCES
+
         id = 0
         for step in best_epoch.steps:
             for ped in step.peds:
@@ -204,11 +209,11 @@ class Visualiser5:
                 covariance_marker.pose.position.z = covariance_marker.scale.z/2.
                 covariances_msg.markers.append(covariance_marker)
                 id += 1
-        # LEARNING
         id = 0
         for epoch in msg.epochs:
             for step in epoch.steps:
                 for ped in step.peds:
+                    # LEARNING
                     lped_marker = Marker(
                         id=id,
                         type=Marker.SPHERE,
@@ -221,18 +226,64 @@ class Visualiser5:
                     lped_marker.pose.position.z = lped_marker.scale.z/2.
                     learning_msg.markers.append(lped_marker)
                     id += 1
+                    # FORCES
+                    force_multiplicator = 0.1
+                    # ped.force_repulsive
+                    id = id+1000
+                    ped_force_repulsive_marker = Marker(
+                        id=id,
+                        type=Marker.ARROW,
+                        action=Marker.ADD,
+                        scale=self.force_arrow_scale,
+                        color=self.force_repulsive_arrow_color,
+                        points=[deepcopy(ped.position.position), self.p_summ(
+                            deepcopy(ped.position.position), ped.force_repulsive.position,force_multiplicator)] # finish HERE!!!!!!!
+                    )
+                    ped_force_repulsive_marker.header.frame_id = self.frame
+                    ped_force_repulsive_marker.pose.orientation.w = 1.
+                    forces_msg.markers.append(ped_force_repulsive_marker)
+                    # ped.force_goal
+                    id = id+1000
+                    ped_force_goal_marker = Marker(
+                        id=id,
+                        type=Marker.ARROW,
+                        action=Marker.ADD,
+                        scale=self.force_arrow_scale,
+                        color=self.force_goal_arrow_color,
+                        points=[deepcopy(ped.position.position), self.p_summ(
+                            deepcopy(ped.position.position), ped.force_goal.position,force_multiplicator)]
+                    )
+                    ped_force_goal_marker.header.frame_id = self.frame
+                    ped_force_goal_marker.pose.orientation.w = 1.
+                    forces_msg.markers.append(ped_force_goal_marker)
+                    # ped.force_wall
+                    id = id+1000
+                    ped_force_wall_marker = Marker(
+                        id=id,
+                        type=Marker.ARROW,
+                        action=Marker.ADD,
+                        scale=self.force_arrow_scale,
+                        color=self.force_wall_arrow_color,
+                        points=[deepcopy(ped.position.position), self.p_summ(
+                            deepcopy(ped.position.position), ped.force_wall.position,force_multiplicator)]
+                    )
+                    ped_force_wall_marker.header.frame_id = self.frame
+                    ped_force_wall_marker.pose.orientation.w = 1.
+                    forces_msg.markers.append(ped_force_wall_marker)
+        
+        
         # PUBLISH ALL MSGS
         self.pub_peds.publish(peds_msg)
         self.pub_peds_goals.publish(peds_goals_msg)
         self.pub_robot.publish(robot_msg)
         self.pub_robot_goal.publish(robot_goal_msg)
-        # self.pub_forces.publish(forces_msg)
+        self.pub_forces.publish(forces_msg)
         self.pub_propagation.publish(propagation_msg)
         self.pub_covariances.publish(covariances_msg)
         self.pub_learning.publish(learning_msg)
 
-    def p_summ(self, p1, p2):
-        return Point(x=p1.x+p2.x, y=p1.y+p2.y, z=p1.z+p2.z)
+    def p_summ(self, p1, p2,k=1):
+        return Point(x=p1.x+p2.x*k, y=p1.y+p2.y*k, z=p1.z+p2.z*k)
 
 
 if __name__ == '__main__':
