@@ -1,4 +1,5 @@
 <launch>
-    <node pkg="map_server" name="map_server" type="map_server" required="true" output="screen" args="$(find mpdm)/resource/labmap.yaml"></node>  
+    <!-- <node pkg="map_server" name="map_server" type="map_server" required="true" output="screen" args="$(find mpdm)/resource/labmap.yaml"></node>   -->
+    <node pkg="map_server" name="map_server" type="map_server" required="true" output="screen" args="$(find mpdm)/resource/testmap.yaml"></node>  
     <node pkg="tf" type="static_transform_publisher" name="map_to_world" args="0 0 0 0 0 0 1 world map 100" />
 </launch>

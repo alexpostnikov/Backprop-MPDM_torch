@@ -25,10 +25,14 @@ This is ROS pkg, becouse of this, you need to clone project into catkin workspac
 cd ~/catkin_ws/src
 git clone https://github.com/alexpostnikov/Backprop-MPDM_torch.git
 ```
+### cpp dependencies part ###
+
+Prepare dependencies
+```
+sudo apt install ros-melodic-grid-map
+```
 
 ### Build ###
-
-All project on Pytho3, but you need to compille custom ROS msgs that we made for that project
 
 ```
 cd ~catkin_ws

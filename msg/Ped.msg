@@ -6,3 +6,6 @@ geometry_msgs/Pose goal
 geometry_msgs/Pose cov_pose
 geometry_msgs/Pose cov_vel
 geometry_msgs/Pose cov_goal
+geometry_msgs/Pose force_repulsive
+geometry_msgs/Pose force_goal
+geometry_msgs/Pose force_wall

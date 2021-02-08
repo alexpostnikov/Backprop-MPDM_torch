@@ -77,7 +77,7 @@ def callback_update_state(msg, vars):
 if __name__ == '__main__':
     rospy.init_node("fake_publicator")
     frame = "map"
-    num_peds = 1
+    num_peds = 3
 
     # position
     robot_pose_pub = rospy.Publisher("/odom", PoseStamped, queue_size=1)

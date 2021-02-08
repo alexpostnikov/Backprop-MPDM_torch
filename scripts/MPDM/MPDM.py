@@ -5,7 +5,7 @@ import numpy as np
 import math
 import time
 from typing import Tuple, Optional
-from Utils.RosMapTools import get_area
+from Utils.RosMapTools import get_area, get_areas
 
 
 class MPDM:
@@ -31,7 +31,7 @@ class MPDM:
         self.sequential = nn.Sequential(*self.modules)
 
     def is_init(self):
-        return self.states is not None
+        return self.states is not None and self.goals is not None
 
     def update_state(self, robot: np.ndarray, peds: np.ndarray, robot_goal: np.ndarray, peds_goals: np.ndarray, map=None):
 
@@ -112,12 +112,12 @@ class MPDM:
             stacked_state = [inner_data.clone()]
             map_data = None
             if self.map is not None:
-                point = starting_poses[0,0:2].tolist() # position of center
-                area = 1.0 # area in meters
-                map_data, resolution = get_area(self.map, point, area)
+                points = starting_poses[:,0:2].tolist() # position of center
+                area = 0.7 # area in meters
+                maps_data, resolution = get_areas(self.map, points, area)
                 map_origin = None # None == take robot position as center of map
             inner_data_, stacked_state, cost, stacked_covariance, stacked_forces, _,_,_,_,_ = self.sequential(
-                (inner_data, stacked_state, cost, stacked_covariance, stacked_forces, self.goals, goals, map_data, resolution, map_origin))
+                (inner_data, stacked_state, cost, stacked_covariance, stacked_forces, self.goals, goals, maps_data, resolution, map_origin))
 
             self.learning_stacked_policys.append(policy.name)
             self.learning_stacked_state.append(torch.stack(stacked_state))

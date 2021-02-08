@@ -228,6 +228,7 @@ class Visualiser5:
                     id += 1
                     # FORCES
                     force_multiplicator = 0.1
+                    force_multiplicator_debug = 0.01
                     # ped.force_repulsive
                     id = id+1000
                     ped_force_repulsive_marker = Marker(
@@ -237,7 +238,7 @@ class Visualiser5:
                         scale=self.force_arrow_scale,
                         color=self.force_repulsive_arrow_color,
                         points=[deepcopy(ped.position.position), self.p_summ(
-                            deepcopy(ped.position.position), ped.force_repulsive.position,force_multiplicator)] # finish HERE!!!!!!!
+                            deepcopy(ped.position.position), ped.force_repulsive.position,force_multiplicator_debug)]
                     )
                     ped_force_repulsive_marker.header.frame_id = self.frame
                     ped_force_repulsive_marker.pose.orientation.w = 1.
@@ -251,7 +252,7 @@ class Visualiser5:
                         scale=self.force_arrow_scale,
                         color=self.force_goal_arrow_color,
                         points=[deepcopy(ped.position.position), self.p_summ(
-                            deepcopy(ped.position.position), ped.force_goal.position,force_multiplicator)]
+                            deepcopy(ped.position.position), ped.force_goal.position,force_multiplicator_debug)]
                     )
                     ped_force_goal_marker.header.frame_id = self.frame
                     ped_force_goal_marker.pose.orientation.w = 1.

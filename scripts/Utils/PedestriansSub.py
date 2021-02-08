@@ -35,7 +35,6 @@ class PedestriansSub:
         self.goals = np.array(goals)
         self.new_msg = True
 
-
     def get_peds_state(self):
         try:
             self.new_msg = False

@@ -24,7 +24,7 @@ class HSFM:
         self.kfig = 0.05  # angular speed control
         self.alpha = 3.  # coef needed to calculate kfi and kfig
         self.kj = 0.02  # coef needed to calculate kfi and kfig
-        self.kw = 10.1  # coef needed to calculate obstacle repulsion force
+        self.kw = 30.1  # coef needed to calculate obstacle repulsion force
         self.ped_mass = 50
         self.ped_radius = 0.35
         # inercial moment of ped (m*r^2/2)
@@ -121,16 +121,16 @@ class HSFM:
         B = torch.clamp(B, min=0.0002)
         return B
 
-    def calc_forces(self, state, goals, map=None, resolution=None, map_origin = None):
+    def calc_forces(self, state, goals, maps=None, resolution=None, maps_origin = None):
         rep_force = self.rep_f.calc_rep_forces(
             state[:, 0:2], state[:, 3:5], param_lambda=1)*3
         # rep_force = torch.zeros_like(rep_force) # TODO: debug string
         attr_force = self.force_goal(state, goals)
         wall_force = rep_force*0
-        if map is not None and resolution is not None:
+        if maps is not None and resolution is not None:
             #  calc force direction
             # map positioned to first agent
-            wall_force = self.calc_obstacle_force(state, map, resolution, map_origin)
+            wall_force = self.calc_obstacle_force2(state, maps, resolution, maps_origin)
             # Fo = self.calc_obstacle_force2(state, map, resolution) # map positioned to first agent
             # F = rep_force + attr_force + Fo
         F = rep_force + attr_force + wall_force
@@ -139,22 +139,50 @@ class HSFM:
         
         return F, debug_data
 
+    def calc_obstacle_force2(self, state, maps, resolution, maps_origin):
+        poses = state[:, 0:2].detach().numpy()
+        # map_origin = poses[0]
+        Fw = torch.zeros(state[:, 0:3].shape)
+        # prepare map
+        poses_in_map = np.flip(
+            ((poses-maps_origin)/resolution + np.asarray([n.shape for n in maps])/2).astype(int),1)# [x,y]==[yp,xp]
+        for n in range(len(poses_in_map)):
+            # pose_in_map = np.rint((poses[n]-map_origin)/resolution + np.asarray(map.shape)/2).astype(int) # TODO: check this line
+            # ignore positions that out of map
+            # TODO: finish there
+            if (maps[n]>0).any() and (poses_in_map[n] >= 0).all() and (poses_in_map[n] < maps[n].shape).all():
+                # if n>0:
+                #     print("here")
+                xp, yp = self.nearest_nonzero_idx_v2(maps[n], poses_in_map[n, 0], poses_in_map[n, 1])
+                diff_pose = torch.tensor((poses_in_map[n] - [xp, yp])*resolution).flip(0) 
+                dif_dist = np.sqrt(diff_pose[0]*diff_pose[0]+diff_pose[1]*diff_pose[1])
+                Fabs = np.exp(-dif_dist)*self.kw
+                Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
+                Fw[n, 1] = -Fw[n, 1]# y axe in another direction
+        return Fw
  
     def calc_obstacle_force(self, state, map, resolution, map_origin):
         poses = state[:, 0:2].detach().numpy()
         # map_origin = poses[0]
         Fw = torch.zeros(state[:, 0:3].shape)
         # prepare map
-        poses_in_map = ((poses-map_origin)/resolution +
-                        np.asarray(map.shape)/2).astype(int)
+        poses_in_map = np.flip(
+            ((poses-map_origin)/resolution + np.asarray(map.shape)/2).astype(int),
+            1)# [x,y]==[yp,xp]
+        area = map.shape[0]
         for n in range(len(poses_in_map)):
             # pose_in_map = np.rint((poses[n]-map_origin)/resolution + np.asarray(map.shape)/2).astype(int) # TODO: check this line
             # ignore positions that out of map
-            if (poses_in_map[n] >= 0).all() and (poses_in_map[n] < map.shape).all():
-                x, y = self.nearest_nonzero_idx_v2(map, poses_in_map[n, 0], poses_in_map[n, 1])
-                diff_pose = torch.tensor((poses_in_map[n] - [x, y])*resolution)
-                # TODO: Finish there. Check robot position on different steps
-                Fw[n, 0:2] = - diff_pose * self.kw
+            # TODO: finish there
+            if (map>0).any() and (poses_in_map[n] >= 0).all() and (poses_in_map[n] < map.shape).all():
+                # if n>0:
+                #     print("here")
+                xp, yp = self.nearest_nonzero_idx_v2(map, poses_in_map[n, 0], poses_in_map[n, 1])
+                diff_pose = torch.tensor((poses_in_map[n] - [xp, yp])*resolution).flip(0) 
+                dif_dist = np.sqrt(diff_pose[0]*diff_pose[0]+diff_pose[1]*diff_pose[1])
+                Fabs = np.exp(-dif_dist*dif_dist)*self.kw
+                Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
+                Fw[n, 1] = -Fw[n, 1]# y axe in another direction
         return Fw
 
         # taken from https://stackoverflow.com/questions/43306291/find-the-nearest-nonzero-element-and-corresponding-index-in-a-2d-numpy-array
