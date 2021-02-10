@@ -7,6 +7,12 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <nav_msgs/Path.h>
 
+
+#include <cv_bridge/cv_bridge.h>
+#include <grid_map_cv/grid_map_cv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/core/core.hpp> 
 #include <limits>
 #include <cmath>
 #include <string>
@@ -17,6 +23,9 @@
 #include <path_simplifier.h>
 #include <global_planner.h>
 #include <mpdm/Path.h>
+
+// interesting realisation
+// https://docs.ros.org/en/diamondback/api/occupancy_grid_utils/html/shortest__path_8cpp_source.html
 
 class PathPlanner
 {
@@ -60,6 +69,24 @@ public:
   void callbackMap(const nav_msgs::OccupancyGrid::ConstPtr &msg)
   {
     grid_map::GridMapRosConverter::fromOccupancyGrid(*msg,layer,grid_map);
+    // create inflation static layer
+    float resolution = (*msg).info.resolution;
+    int erosion_size = (int)(map_inflatioon/resolution);
+    const char FREE_SPACE = 0;
+    const char INFLATION_OBSTACLE = 100;
+    
+    cv_bridge::CvImage brimage;
+    // grid_map::GridMapCvConverter::toImage<unsigned short, 1>(grid_map, layer, CV_16UC1, 0.0, 0.3, cvimage);
+    grid_map::GridMapRosConverter::toCvImage(grid_map, layer, sensor_msgs::image_encodings::MONO8, brimage);
+    cv::Mat element = cv::getStructuringElement(cv::MORPH_ELLIPSE,
+                                                cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1),
+                                                cv::Point(erosion_size, erosion_size));
+    cv::Mat cvimage = brimage.image;
+    cv::dilate(cvimage, cvimage, element);
+    auto imageMsg = cv_bridge::CvImage((*msg).header, sensor_msgs::image_encodings::MONO8, cvimage).toImageMsg();
+    grid_map::GridMapRosConverter::addLayerFromImage(*imageMsg, layer, grid_map, FREE_SPACE, INFLATION_OBSTACLE);
+    // gridmap["static_inflation_layer"] = gridmap["static_layer"].cwiseMax(gridmap["static_inflation_layer"]);
+    ///////////////////////////////////////
     frame_id = (*msg).header.frame_id;
     ROS_INFO("got the map");
   }
@@ -69,7 +96,7 @@ private:
   grid_map::GridMap grid_map;
   std::string layer = "static";
   std::string frame_id;
-
+  float map_inflatioon = 0.25;
   // std::vector<grid_map::Index> path_vector;
 
   void create_ROS_path(nav_msgs::Path &path_msg, std::vector<grid_map::Index> &path, geometry_msgs::Quaternion &angle, std::string frame) //FIXME: please fix this sheet

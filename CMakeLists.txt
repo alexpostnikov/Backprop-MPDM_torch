@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   grid_map_ros
   rosmsg
   nav_msgs
+  # OpenCV REQUIRED
 )
 
 add_service_files(

@@ -19,3 +19,4 @@ venv/*
 */.idea/*
 *.pkl
 *.zip
+build/*
