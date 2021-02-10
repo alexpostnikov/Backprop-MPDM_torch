@@ -2,6 +2,14 @@ import math
 import numpy as np
 
 
+
+def select_next_goal(state, current_goal, path,radius = 0.05):
+    for pose in range(len(path)-1):
+        dist = math.sqrt(math.pow(state[0] - path[pose,0], 2) + math.pow(state[1] - path[pose,1], 2))
+        if dist<radius:
+            return path[pose+1]
+    return current_goal
+
 class GlobalPlanner:
 
     def __init__(self):

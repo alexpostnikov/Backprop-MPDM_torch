@@ -25,6 +25,7 @@ class HSFM:
         self.alpha = 3.  # coef needed to calculate kfi and kfig
         self.kj = 0.02  # coef needed to calculate kfi and kfig
         self.kw = 30.1  # coef needed to calculate obstacle repulsion force
+        self.kw_dist = 0.25 # wall force dist
         self.ped_mass = 50
         self.ped_radius = 0.35
         # inercial moment of ped (m*r^2/2)
@@ -157,8 +158,9 @@ class HSFM:
                 diff_pose = torch.tensor((poses_in_map[n] - [xp, yp])*resolution).flip(0) 
                 dif_dist = np.sqrt(diff_pose[0]*diff_pose[0]+diff_pose[1]*diff_pose[1])
                 Fabs = np.exp(-dif_dist)*self.kw
-                Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
-                Fw[n, 1] = -Fw[n, 1]# y axe in another direction
+                if self.kw_dist > dif_dist:
+                    Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
+                    Fw[n, 1] = -Fw[n, 1]# y axe in another direction
         return Fw
  
     def calc_obstacle_force(self, state, map, resolution, map_origin):
@@ -180,9 +182,14 @@ class HSFM:
                 xp, yp = self.nearest_nonzero_idx_v2(map, poses_in_map[n, 0], poses_in_map[n, 1])
                 diff_pose = torch.tensor((poses_in_map[n] - [xp, yp])*resolution).flip(0) 
                 dif_dist = np.sqrt(diff_pose[0]*diff_pose[0]+diff_pose[1]*diff_pose[1])
-                Fabs = np.exp(-dif_dist*dif_dist)*self.kw
-                Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
-                Fw[n, 1] = -Fw[n, 1]# y axe in another direction
+                # check self.kw_dist
+                if self.kw_dist < dif_dist:
+                    Fabs = np.exp(-dif_dist*dif_dist)*self.kw
+                    Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
+                    Fw[n, 1] = -Fw[n, 1]# y axe in another direction
+                # Fabs = np.exp(-dif_dist*dif_dist)*self.kw
+                # Fw[n, 0:2] = diff_pose*(Fabs/dif_dist)
+                # Fw[n, 1] = -Fw[n, 1]# y axe in another direction
         return Fw
 
         # taken from https://stackoverflow.com/questions/43306291/find-the-nearest-nonzero-element-and-corresponding-index-in-a-2d-numpy-array

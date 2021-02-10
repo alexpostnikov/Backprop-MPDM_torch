@@ -169,7 +169,7 @@ class MPDM:
         # print("{policy} cost = {cost:0.4f}".format(policy=policy.name, cost=torch.sum(cost).item()))
 
     def get_learning_data(self):
-        return self.learning_stacked_state, self.goals, self.learning_stacked_cost, self.learning_stacked_covariance, self.learning_stacked_policys, self.propogation_times, self.learning_stacked_forces
+        return self.learning_stacked_state, np.array(self.goals), self.learning_stacked_cost, self.learning_stacked_covariance, self.learning_stacked_policys, self.propogation_times, self.learning_stacked_forces
 
     # TODO: go out to fake_publicator
     def get_probability(self, inner_data: torch.Tensor, goals: torch.Tensor, param: object) -> Tuple[torch.Tensor]:

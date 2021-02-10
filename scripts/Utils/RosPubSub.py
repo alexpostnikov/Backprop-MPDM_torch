@@ -3,7 +3,7 @@ from Utils.MapSub import MapSub
 from Utils.PathPub import PathPub
 from Utils.PedestriansSub import PedestriansSub
 from Utils.LearningPub import LearningPub
-
+from Utils.Srvs import PathSrvSub
 class RosPubSub:
     def __init__(self):
         new_data_available = False
@@ -12,6 +12,7 @@ class RosPubSub:
         self.peds = PedestriansSub()
         self.path = PathPub()
         self.learning = LearningPub()
+        self.pathSrv = PathSrvSub()
     
     def new_data_available(self):
         # check data

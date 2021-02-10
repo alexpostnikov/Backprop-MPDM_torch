@@ -4,12 +4,12 @@ import numpy as np
 from Param import ROS_Param
 from Utils.RosPubSub import RosPubSub
 from Utils.Utils import array_to_ros_path
-from Utils.RosMapTools import map_to_bool_grid_map, get_coordinate_on_map
+# from Utils.RosMapTools import map_to_bool_grid_map, get_coordinate_on_map
 from MPDM.HSFM import HSFM
 from MPDM.MPDM import MPDM
 from cov_prediction.SigmaNN import SigmaNN
 from MPDM.Policies import SoloPolicy, LeftPolicy, RightPolicy, StopPolicy
-from Utils.GlobalPlanner import GlobalPlannerThetaStar
+from Utils.GlobalPlanner import select_next_goal
 import time
 
 if __name__ == '__main__':
@@ -17,7 +17,6 @@ if __name__ == '__main__':
     ps = RosPubSub()
     param = ROS_Param()
     trans_model = HSFM(param)  # SFM(param)
-    planner = GlobalPlannerThetaStar()
     # cov_model = SigmaNN()
     cov_model = None
     policies = []
@@ -37,9 +36,8 @@ if __name__ == '__main__':
             break
         rospy.sleep(1.0)
         rospy.loginfo("no data of robot_state or peds_state")
+    robot_global_path = [goal]
     rospy.loginfo("mpdm is initialized")
-    if map is not None:
-        bool_grid_map = map_to_bool_grid_map(map)
     while not rospy.is_shutdown():
 
         start = time.time()
@@ -49,23 +47,32 @@ if __name__ == '__main__':
             old_goals = goals.copy()
         except:
             print("goals is None")
+        
         robot, goal = ps.robot.get_robot_state()
         peds, goals = ps.peds.get_peds_state()
+        
         if robot is None or goal is None or peds is None or goals is None:
             rospy.sleep(0.1)  # for debug
             continue
-        if bool_grid_map is not None and (old_goal != goal).all():
-            robot_in_map = get_coordinate_on_map(robot[:2], map)
-            goal_in_map = get_coordinate_on_map(goal[:2], map)
-            path = planner.calc_path(robot_in_map, goal_in_map, bool_grid_map)
-        # map = ps.map.update_static_map() # it is getting around 0.05s and not necessary for static map
-        mpdm.update_state(robot, peds, goal, goals, map)
+        
+        if (old_goal != goal).any():
+            robot_global_path = ps.pathSrv.getPath(robot, goal)
+            local_goal= robot_global_path[0]
+        try:
+            local_goal = select_next_goal(robot, local_goal, robot_global_path)
+        except:
+            local_goal= goal
+        mpdm.update_state(robot, peds, local_goal, goals, map)
+        
         # compute
         path_tensor = mpdm.predict(epoch=1)
         # convert to ROS msgs and send out
         ps.path.publish_from_tensor(path_tensor)
         s, g, ct, co, p, pt, f = mpdm.get_learning_data()
         lt = time.time() - start
+        # hmm
+        g[0] = goal
+        # hmm
         ps.learning.publish(s, g, ct, co, p, pt, lt, f)
         # NOTE: return for performance debug
         # print("average time: ", lt)
