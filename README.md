@@ -31,7 +31,7 @@ git clone https://github.com/alexpostnikov/Backprop-MPDM_torch.git
 All project on Pytho3, but you need to compille custom ROS msgs that we made for that project
 
 ```
-cd ~catkin_ws
+cd ~/catkin_ws
 catkin_make
 source ./devel/setup.bash
 ```
